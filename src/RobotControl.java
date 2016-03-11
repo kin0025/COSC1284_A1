@@ -282,13 +282,12 @@ controlMechanismOptimisedB(barHeights, blockHeights);
     }
 
     public int[] optimisePathing(int barHeights[]) { //literally broken, need more debugging
-        //Finding optimal bar - magic happens here
         int BarRuns = 0; // We can assume that there are always 6 bars
         int[] BarNumbers = {0,0,0,0,0,0};
         while(BarRuns <= barHeights.length - 1) {
             int[] OptimisationBars = {0,0,0,0,0,0,0};
             OptimisationBars[BarRuns] = (7-barHeights[BarRuns])+(6-BarRuns);
-            int[] Optimisation = {0,0,0,0,0,0,0};
+            int[] Optimisation = {20,20,20,20,20,20,20};
             byte r = 0;
             if(OptimisationBars[BarRuns] <= Optimisation[0]){
                 while(r <= 6){
