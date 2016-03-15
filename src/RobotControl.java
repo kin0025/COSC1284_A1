@@ -215,6 +215,85 @@ class RobotControl {
         }
     }
 
+    public void controlMechanismC(int barHeights[], int blockHeights[]) {
+        //todo -  once i know how to use for loops, get rid of some of these horrible while loops
+        //todo- pathing properly. Don't asume all bars have a size 3 block on top.
+        //todo- Path around bars. ensure that bars will not block the path of other blocks and take that into account when choosing optimal bar to place on.
+        int height = 2;         // Initial height of arm 1
+        int width = 1;         // Initial width of arm 2
+        int drop = 0;         // Initial depth of arm 3
+        int NumberBlocks = blockHeights.length; //How many blocks need to be moved.
+        int NoThreeBlocks = 0; // Count the number of blocks that need to be put on bars
+        byte ThreesLoop = 0;
+        while (ThreesLoop != blockHeights.length) {
+            if (blockHeights[ThreesLoop] == 3) {
+                NoThreeBlocks++;
+            }
+            ThreesLoop++;
+        }
+        int[] BarOptimised = optimisePathing(barHeights);
+        //setting stack height total for the end.
+        int StackHeight = 0;
+        int BlockRuns = blockHeights.length;
+        while (BlockRuns != 0) {
+            StackHeight += blockHeights[BlockRuns - 1];
+            BlockRuns--;
+        }
+        int MaxHeight = 0;
+        int BarRuns = 6;
+        while (BarRuns != 0) {
+            if (MaxHeight < barHeights[BarRuns - 1]) {
+                MaxHeight = barHeights[BarRuns - 1];
+            }
+            BarRuns--;
+        }
+        int TopBlockNumber = blockHeights.length;
+        height = moveVerticalTo(13, height);
+        int BarOneHeight = 0; //Initialising outside of loop as we don't want these set to zero again.
+        int BarTwoHeight = 0;
+        int BarThreesPosition = 0;
+        while (NumberBlocks != 0) { //Doing the actual movement
+            int CurrentBlock = blockHeights[TopBlockNumber - 1];
+            TopBlockNumber--;
+            //Move to the stack
+            width = moveHorizontalTo(10, width);
+            //Drop to the top position of the stack
+            drop = moveCraneToPosition(StackHeight, height, drop);
+            r.pick();
+            width = moveHorizontalTo(9, width);
+            StackHeight = StackHeight - CurrentBlock;
+            int MoveTo;
+            int currentBarHeight;
+            if (CurrentBlock == 1) {
+                MoveTo = 1;
+                currentBarHeight = BarOneHeight;
+            } else if (CurrentBlock == 2) {
+                MoveTo = 2;
+                currentBarHeight = BarTwoHeight;
+            } else {
+                MoveTo = BarOptimised[BarThreesPosition] + 3;
+                currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
+            }
+            int MaxMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo);
+            drop = moveCraneToPosition(MaxMoveHeight + CurrentBlock /* To take bar height + crane height into account */, height, drop);
+            width = moveHorizontalTo(MoveTo, width);
+            drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
+            r.drop();
+            if (StackHeight + 1 > MaxMoveHeight + 3) {
+                drop = moveCraneToPosition(StackHeight, height, drop);
+            } else drop = moveCraneToPosition(MaxMoveHeight + 3, height, drop); //replaces some other logic
+            if (CurrentBlock == 3) {
+                BarThreesPosition++;
+                barHeights[BarThreesPosition] = barHeights[BarThreesPosition] + CurrentBlock;
+            } else if (CurrentBlock == 1) {
+                BarOneHeight++;
+            } else {
+                BarTwoHeight = BarTwoHeight + 2;
+            }
+            NumberBlocks--;
+        }
+    }
+
     //A listing of movement methods.
     public int moveVerticalTo(int MoveTo, int Position) { //We get the position to move to and the current position passed to us
         while (Position != MoveTo) { //when we have not moved to the correct position proceed
