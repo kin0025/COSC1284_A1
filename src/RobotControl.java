@@ -170,9 +170,9 @@ class RobotControl {
         }
         int TopBlockNumber = blockHeights.length;
         height = moveVerticalTo(13, height);
-        int BarOneHeight = 0; //Initialising outside of loop
+        int BarOneHeight = 0; //Initialising outside of loop as we don't want these set to zero again.
         int BarTwoHeight = 0;
-        int BarThreesPosition = 0; //todo Rework all functions that take ThreesDropBarNumber into account
+        int BarThreesPosition = 0;
         while (NumberBlocks != 0) { //Doing the actual movement
             int CurrentBlock = blockHeights[TopBlockNumber - 1];
             TopBlockNumber--;
@@ -192,31 +192,24 @@ class RobotControl {
                 MoveTo = 2;
                 currentBarHeight = BarTwoHeight;
             } else {
-                MoveTo = BarOptimised[BarThreesPosition];
+                MoveTo = BarOptimised[BarThreesPosition] + 3;
                 currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
             }
-            int MaxMoveHeight = checkMaxPathingHeightToBars(barHeights, 1);
+            int MaxMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo);
             drop = moveCraneToPosition(MaxMoveHeight + CurrentBlock /* To take bar height + crane height into account */, height, drop);
             width = moveHorizontalTo(MoveTo, width);
             drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
             r.drop();
-            drop = moveCraneToPosition(currentBarHeight, height, drop); //replaces some other logic
-            /*if(currentBarHeight + 3 > MaxHeight){
-                MaxHeight = currentBarHeight + 3;
-            }
-            if(MaxHeight >= StackHeight+1){
-                drop = moveCraneToPosition(MaxHeight+1,height,drop);
-            }
-            else if(StackHeight+1 > MaxHeight){
-                drop = moveCraneToPosition(StackHeight + 1,height,drop);
-            }*/
+            if (StackHeight + 1 > MaxMoveHeight + 3) {
+                drop = moveCraneToPosition(StackHeight, height, drop);
+            } else drop = moveCraneToPosition(MaxMoveHeight + 3, height, drop); //replaces some other logic
             if (CurrentBlock == 3) {
                 BarThreesPosition++;
                 barHeights[BarThreesPosition] = barHeights[BarThreesPosition] + CurrentBlock;
-            } else if (CurrentBlock == 2) {
+            } else if (CurrentBlock == 1) {
                 BarOneHeight++;
             } else {
-                BarTwoHeight++;
+                BarTwoHeight = BarTwoHeight + 2;
             }
             NumberBlocks--;
         }
@@ -385,7 +378,40 @@ class RobotControl {
             x++;
 
         }
-        return (BarNumbers);
+        //For scenario 2 output should be 0,3,4,5
+        int[] NumbersFinal = {10, 10, 10, 10, 10};
+        byte CurrentRun = 3;
+        while (CurrentRun != -1) {
+            byte r = 3;
+            if (BarNumbers[CurrentRun] <= NumbersFinal[0]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 0) { // If it is, move all numbers after it down an array index. Do the same to the BarNumbers array
+                    NumbersFinal[r + 1] = NumbersFinal[r];
+                    r--;
+                }
+                NumbersFinal[0] = BarNumbers[CurrentRun]; // Record the Bar associated with this optimisation value.
+            } else if (BarNumbers[CurrentRun] <= NumbersFinal[1]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 1) { // If it is, move all numbers after it down an array index. Do the same to the BarNumbers array
+                    NumbersFinal[r + 1] = NumbersFinal[r];
+                    r--;
+                }
+                NumbersFinal[1] = BarNumbers[CurrentRun]; // Record the Bar associated with this optimisation value.
+            } else if (BarNumbers[CurrentRun] <= NumbersFinal[2]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 2) { // If it is, move all numbers after it down an array index. Do the same to the BarNumbers array
+                    NumbersFinal[r + 1] = NumbersFinal[r];
+                    r--;
+                }
+                NumbersFinal[2] = BarNumbers[CurrentRun]; // Record the Bar associated with this optimisation value.
+            } else if (BarNumbers[CurrentRun] <= NumbersFinal[3]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 3) { // If it is, move all numbers after it down an array index. Do the same to the BarNumbers array
+                    NumbersFinal[r + 1] = NumbersFinal[r];
+                    r--;
+                }
+                NumbersFinal[3] = BarNumbers[CurrentRun]; // Record the Bar associated with this optimisation value.
+            }
+            CurrentRun--;
+        }
+        return (NumbersFinal);
+
     }
 
     public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar) {
