@@ -153,13 +153,12 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         }
         int ThreesDropBarNumber = 9 - NoThreeBlocks;
        //Actually usable Optimised stuff
-        int[] BarOptimised = optimisePathing(barHeights);
+        int[] BarOptimised = optimisePathing(barHeights); //todo add usage of this functionality
         //setting stack height total for the end.
         int StackHeight = 0;
         int BlockRuns = blockHeights.length;
         while(BlockRuns != 0) {
             StackHeight += blockHeights[BlockRuns - 1];
-
             BlockRuns--;
         }
         int MaxHeight = 0;
@@ -181,9 +180,10 @@ controlMechanismOptimisedB(barHeights, blockHeights);
             //Drop to the top position of the stack
             drop = moveCraneToPosition(StackHeight + 1,height,drop);
             r.pick();
-            //move to a spot where we can safely change our vertical height- legacy code from Part A and not necessary - a soltution that does not require the horizontal move could be devised, but in number of moves is equivalent, and this is cleaner to see, but it works
+            //move to a spot where we can safely change our vertical height- legacy code from Part A and not necessary - a solution that does not require the horizontal move could be devised, but in number of moves is equivalent, and this is cleaner to see, but it works
             width = moveHorizontalTo(9, width);
-            drop = moveCraneTo(2, drop); //todo- add a check that only moves to the max height along our path
+            int MaxMoveHeight = checkMaxPathingHeightToBars( barHeights , ThreesDropBarNumber);
+            drop = moveCraneToPosition(MaxMoveHeight +4 /* To take bar height + crane height into account */, height, drop); //todo- add a check that only moves to the max height along our path
             StackHeight = StackHeight - 3;
             width = moveHorizontalTo(ThreesDropBarNumber, width);
             int currentBarHeight = barHeights[ThreesDropBarNumber - 3];
@@ -362,14 +362,13 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         }
         return (BarNumbers);
     }
-    public int checkMaxPathingHeight(int barHeights[], int StartBar, int EndBar){
-        byte BarCount = 0;
-        int MaximumHeight = 0;//todo- make it only run for bars between StartBar and EndBar
-     while(barHeights.length >= BarCount){
-         if(barHeights[BarCount] >= MaximumHeight){
-             MaximumHeight = barHeights[BarCount];
+    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar){
+        int MaximumHeight = 0;//todo- make it only run for bars between LeftBar and EndBar
+     while(5 >= LeftBar - 3){
+         if(barHeights[LeftBar - 3 ] >= MaximumHeight){
+             MaximumHeight = barHeights[LeftBar - 3];
          }
-         BarCount++;
+         LeftBar++;
      }
 
 
