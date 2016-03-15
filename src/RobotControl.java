@@ -4,58 +4,58 @@
  * s3603437@student.rmit.edu.au
  * alex@akinrosssmith.id.au
  */
-class RobotControl
-{
-   private Robot r;
-   public RobotControl(Robot r)
-   {
-       this.r = r;
-   }
+class RobotControl {
+    private Robot r;
 
-   public void control(int barHeights[], int blockHeights[])
-   {//sampleControlMechanism(barHeights,blockHeights);
+    public RobotControl(Robot r) {
+        this.r = r;
+    }
+
+    public void control(int barHeights[], int blockHeights[]) {//sampleControlMechanism(barHeights,blockHeights);
 //controlMechanismLoopedA(barHeights, blockHeights);
 //controlMechanismLoopedB(barHeights, blockHeights);
-controlMechanismOptimisedB(barHeights, blockHeights);
-     
+        controlMechanismOptimisedB(barHeights, blockHeights);
 
-   }
-   public void controlMechanismBasicA(int barHeights[], int blockHeights[]) {
-	   int height = 2;         // Initial height of arm 1
-	   int width = 1;         // Initial width of arm 2
-	   int drop = 0;         // Initial depth of arm 3
-       int dropPos = height - drop;
-	   int stackHeight = 12; //how do I add this shit up
 
-	   height = moveVerticalTo(13,height);
-	   width = moveHorizontalTo(10,width);
-       r.pick();
-       stackHeight = stackHeight - 3;
-       width = moveHorizontalTo(5,width);
-       drop = moveCraneTo(2,drop);
-       r.drop();
-       width = moveHorizontalTo(10,width);
-       drop = moveCraneTo(3,drop);
-       r.pick();
-       stackHeight = stackHeight - 3;
-       drop = moveCraneTo(2,drop);
-       width = moveHorizontalTo(6,width);
-       r.drop();
-       width = moveHorizontalTo(10,width);
-       drop = moveCraneTo(6,drop);
-       r.pick();
-       stackHeight = stackHeight - 3;
-       drop = moveCraneTo(2,drop);
-       width = moveHorizontalTo(7,width);
-       r.drop();
-       width = moveHorizontalTo(10,width);
-       drop = moveCraneTo(9,drop);
-       r.pick();
-       drop = moveCraneTo(2,drop);
-       width = moveHorizontalTo(8,width);
-       r.drop();
+    }
 
-}
+    public void controlMechanismBasicA(int barHeights[], int blockHeights[]) {
+        int height = 2;         // Initial height of arm 1
+        int width = 1;         // Initial width of arm 2
+        int drop = 0;         // Initial depth of arm 3
+        int dropPos = height - drop;
+        int stackHeight = 12; //how do I add this shit up
+
+        height = moveVerticalTo(13, height);
+        width = moveHorizontalTo(10, width);
+        r.pick();
+        stackHeight = stackHeight - 3;
+        width = moveHorizontalTo(5, width);
+        drop = moveCraneTo(2, drop);
+        r.drop();
+        width = moveHorizontalTo(10, width);
+        drop = moveCraneTo(3, drop);
+        r.pick();
+        stackHeight = stackHeight - 3;
+        drop = moveCraneTo(2, drop);
+        width = moveHorizontalTo(6, width);
+        r.drop();
+        width = moveHorizontalTo(10, width);
+        drop = moveCraneTo(6, drop);
+        r.pick();
+        stackHeight = stackHeight - 3;
+        drop = moveCraneTo(2, drop);
+        width = moveHorizontalTo(7, width);
+        r.drop();
+        width = moveHorizontalTo(10, width);
+        drop = moveCraneTo(9, drop);
+        r.pick();
+        drop = moveCraneTo(2, drop);
+        width = moveHorizontalTo(8, width);
+        r.drop();
+
+    }
+
     public void controlMechanismLoopedA(int barHeights[], int blockHeights[]) {
         int height = 2;         // Initial height of arm 1
         int width = 1;         // Initial width of arm 2
@@ -65,11 +65,11 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         int ThreesDropPoint = 9 - NoThreeBlocks;
         int stackHeight = 12; //we can assume height of stack does not change for A
 
-        height = moveVerticalTo(13,height);
+        height = moveVerticalTo(13, height);
 
-        while(NumberBlocks !=0) {
+        while (NumberBlocks != 0) {
             width = moveHorizontalTo(10, width);
-            drop = moveCraneTo((height-1) - stackHeight ,drop);
+            drop = moveCraneTo((height - 1) - stackHeight, drop);
             r.pick();
             width = moveHorizontalTo(9, width);
             drop = moveCraneTo(2, drop);
@@ -80,6 +80,7 @@ controlMechanismOptimisedB(barHeights, blockHeights);
             NumberBlocks--;
         }
     }
+
     public void controlMechanismLoopedB(int barHeights[], int blockHeights[]) {
         int height = 2;         // Initial height of arm 1
         int width = 1;         // Initial width of arm 2
@@ -92,21 +93,21 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         int BlockRuns = blockHeights.length;
         //building in some basic collision detection
         int[] BarOptimised = optimisePathing(barHeights);
-        while(BlockRuns != 0) {
+        while (BlockRuns != 0) {
             StackHeight += blockHeights[BlockRuns - 1];
 
             BlockRuns--;
         }
-    int MaxHeight = 0;
-    int BarRuns = 6;
-    while(BarRuns != 0) {
-            if(MaxHeight < barHeights[BarRuns-1]){
-                MaxHeight = barHeights[BarRuns-1];
+        int MaxHeight = 0;
+        int BarRuns = 6;
+        while (BarRuns != 0) {
+            if (MaxHeight < barHeights[BarRuns - 1]) {
+                MaxHeight = barHeights[BarRuns - 1];
             }
             BarRuns--;
         }
-        height = moveVerticalTo(13,height);
-        while(NumberBlocks !=0) {
+        height = moveVerticalTo(13, height);
+        while (NumberBlocks != 0) {
             //Figure out the height of the current block in the array
             int TopBlockNumber = blockHeights.length;
             int CurrentBlock = blockHeights[TopBlockNumber - 1];
@@ -114,7 +115,7 @@ controlMechanismOptimisedB(barHeights, blockHeights);
             //Move to to stack
             width = moveHorizontalTo(10, width);
             //Drop to the top position of the stack
-            drop = moveCraneToPosition(StackHeight + 1,height,drop);
+            drop = moveCraneToPosition(StackHeight + 1, height, drop);
             r.pick();
             //move to a spot where we can safely change our vertical height- legacy code from Part A and not necessary - a soltution that does not require the horizontal move could be devised, but in number of moves is equivalent, and this is cleaner to see, but it works
             width = moveHorizontalTo(9, width);
@@ -122,21 +123,21 @@ controlMechanismOptimisedB(barHeights, blockHeights);
             StackHeight = StackHeight - 3;
             width = moveHorizontalTo(ThreesDropBarNumber, width);
             int currentBarHeight = barHeights[ThreesDropBarNumber - 3];
-            drop = moveCraneToPosition(currentBarHeight + 1 + CurrentBlock ,height,drop);
+            drop = moveCraneToPosition(currentBarHeight + 1 + CurrentBlock, height, drop);
             r.drop();
-            if(currentBarHeight + 3 > MaxHeight){
+            if (currentBarHeight + 3 > MaxHeight) {
                 MaxHeight = currentBarHeight + 3;
             }
-            if(MaxHeight >= StackHeight+1){
-                drop = moveCraneToPosition(MaxHeight+1,height,drop);
-            }
-            else if(StackHeight+1 > MaxHeight){
-                drop = moveCraneToPosition(StackHeight + 1,height,drop);
+            if (MaxHeight >= StackHeight + 1) {
+                drop = moveCraneToPosition(MaxHeight + 1, height, drop);
+            } else if (StackHeight + 1 > MaxHeight) {
+                drop = moveCraneToPosition(StackHeight + 1, height, drop);
             }
             ThreesDropBarNumber++;
             NumberBlocks--;
         }
     }
+
     public void controlMechanismOptimisedB(int barHeights[], int blockHeights[]) {
         //todo -  once i know how to use for loops, get rid of some of these horrible while loops
         int height = 2;         // Initial height of arm 1
@@ -145,51 +146,62 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         int NumberBlocks = blockHeights.length; //How many blocks need to be moved.
         int NoThreeBlocks = 0; // Count the number of blocks that need to be put on bars
         byte ThreesLoop = 0;
-        while(ThreesLoop != blockHeights.length){
-            if(blockHeights[ThreesLoop] == 3){
+        while (ThreesLoop != blockHeights.length) {
+            if (blockHeights[ThreesLoop] == 3) {
                 NoThreeBlocks++;
             }
             ThreesLoop++;
         }
-        int ThreesDropBarNumber = 9 - NoThreeBlocks;
-       //Actually usable Optimised stuff
         int[] BarOptimised = optimisePathing(barHeights); //todo add usage of this functionality
         //setting stack height total for the end.
         int StackHeight = 0;
         int BlockRuns = blockHeights.length;
-        while(BlockRuns != 0) {
+        while (BlockRuns != 0) {
             StackHeight += blockHeights[BlockRuns - 1];
             BlockRuns--;
         }
         int MaxHeight = 0;
         int BarRuns = 6;
-        while(BarRuns != 0) {
-            if(MaxHeight < barHeights[BarRuns-1]){
-                MaxHeight = barHeights[BarRuns-1];
+        while (BarRuns != 0) {
+            if (MaxHeight < barHeights[BarRuns - 1]) {
+                MaxHeight = barHeights[BarRuns - 1];
             }
             BarRuns--;
         }
-        height = moveVerticalTo(13,height);
-        while(NumberBlocks !=0) { //Doing the actual movement
-            //Figure out the height of the current block in the array
-            int TopBlockNumber = blockHeights.length;
+        int TopBlockNumber = blockHeights.length;
+        height = moveVerticalTo(13, height);
+        int BarOneHeight = 0; //Initialising outside of loop
+        int BarTwoHeight = 0;
+        int BarThreesPosition = 0; //todo Rework all functions that take ThreesDropBarNumber into account
+        while (NumberBlocks != 0) { //Doing the actual movement
             int CurrentBlock = blockHeights[TopBlockNumber - 1];
-            --TopBlockNumber;
-            //Move to to stack
+            TopBlockNumber--;
+            //Move to the stack
             width = moveHorizontalTo(10, width);
             //Drop to the top position of the stack
-            drop = moveCraneToPosition(StackHeight + 1,height,drop);
+            drop = moveCraneToPosition(StackHeight, height, drop);
             r.pick();
-            //move to a spot where we can safely change our vertical height- legacy code from Part A and not necessary - a solution that does not require the horizontal move could be devised, but in number of moves is equivalent, and this is cleaner to see, but it works
             width = moveHorizontalTo(9, width);
-            int MaxMoveHeight = checkMaxPathingHeightToBars( barHeights , ThreesDropBarNumber);
-            drop = moveCraneToPosition(MaxMoveHeight +4 /* To take bar height + crane height into account */, height, drop); //todo- add a check that only moves to the max height along our path
-            StackHeight = StackHeight - 3;
-            width = moveHorizontalTo(ThreesDropBarNumber, width);
-            int currentBarHeight = barHeights[ThreesDropBarNumber - 3];
-            drop = moveCraneToPosition(currentBarHeight + 1 + CurrentBlock ,height,drop);
+            StackHeight = StackHeight - CurrentBlock;
+            int MoveTo;
+            int currentBarHeight;
+            if (CurrentBlock == 1) {
+                MoveTo = 1;
+                currentBarHeight = BarOneHeight;
+            } else if (CurrentBlock == 2) {
+                MoveTo = 2;
+                currentBarHeight = BarTwoHeight;
+            } else {
+                MoveTo = BarOptimised[BarThreesPosition];
+                currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
+            }
+            int MaxMoveHeight = checkMaxPathingHeightToBars(barHeights, 1);
+            drop = moveCraneToPosition(MaxMoveHeight + CurrentBlock /* To take bar height + crane height into account */, height, drop);
+            width = moveHorizontalTo(MoveTo, width);
+            drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
             r.drop();
-            if(currentBarHeight + 3 > MaxHeight){
+            drop = moveCraneToPosition(currentBarHeight, height, drop); //replaces some other logic
+            /*if(currentBarHeight + 3 > MaxHeight){
                 MaxHeight = currentBarHeight + 3;
             }
             if(MaxHeight >= StackHeight+1){
@@ -197,12 +209,20 @@ controlMechanismOptimisedB(barHeights, blockHeights);
             }
             else if(StackHeight+1 > MaxHeight){
                 drop = moveCraneToPosition(StackHeight + 1,height,drop);
+            }*/
+            if (CurrentBlock == 3) {
+                BarThreesPosition++;
+                barHeights[BarThreesPosition] = barHeights[BarThreesPosition] + CurrentBlock;
+            } else if (CurrentBlock == 2) {
+                BarOneHeight++;
+            } else {
+                BarTwoHeight++;
             }
-            ThreesDropBarNumber++;
             NumberBlocks--;
         }
     }
-	//A listing of movement methods.
+
+    //A listing of movement methods.
     public int moveVerticalTo(int MoveTo, int Position) { //We get the position to move to and the current position passed to us
         while (Position != MoveTo) { //when we have not moved to the correct position proceed
             if (MoveTo < 15 && MoveTo > 0) { //Sanity checking to prevent moving to outside boundaries
@@ -221,9 +241,10 @@ controlMechanismOptimisedB(barHeights, blockHeights);
                 MoveTo = 0; //If it isn't greater than 14, it must be a negative number. Set to 0
             }
         }
-	return (Position);
+        return (Position);
     }
-	public int moveHorizontalTo(int MoveTo, int Position) {
+
+    public int moveHorizontalTo(int MoveTo, int Position) {
         while (Position != MoveTo) {
             if (MoveTo < 11 && MoveTo > 0) { //More input sanitizing
 
@@ -243,6 +264,7 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         }
         return (Position); //Return our position so that it stays up to date
     }
+
     public int moveCraneTo(int MoveTo, int Position) { //Semi Obsolete- the move crane to position replaces this, but this still has uses
         while (Position != MoveTo) { //Why am I still writing comments for stuff that is the same as before?
             if (MoveTo < 13 && MoveTo > -1) {
@@ -262,9 +284,11 @@ controlMechanismOptimisedB(barHeights, blockHeights);
                 MoveTo = 0;
             }
         }
-		return (Position);
-	}
+        return (Position);
+    }
+
     public int moveCraneToPosition(int MoveTo, int Height, int Drop) {
+        MoveTo++;
         int Position = Height - Drop; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
         while (Position != MoveTo) {
             Position = Height - Drop;
@@ -287,6 +311,7 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         }
         return (Drop);
     }
+
     public int[] optimisePathing(int barHeights[]) { //literally broken, need more debugging
         int BarRuns = 0; // We can assume that there are always 6 bars
         int[] BarNumbers = {0, 0, 0, 0, 0, 0, 0};
@@ -362,17 +387,21 @@ controlMechanismOptimisedB(barHeights, blockHeights);
         }
         return (BarNumbers);
     }
-    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar){
-        int MaximumHeight = 0;//todo- make it only run for bars between LeftBar and EndBar
-     while(5 >= LeftBar - 3){
-         if(barHeights[LeftBar - 3 ] >= MaximumHeight){
-             MaximumHeight = barHeights[LeftBar - 3];
-         }
-         LeftBar++;
-     }
+
+    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar) {
+        int MaximumHeight = 0;//
+        if (LeftBar < 3) {
+            LeftBar = 3;
+        }
+        while (5 >= LeftBar - 3) {
+            if (barHeights[LeftBar - 3] >= MaximumHeight) {
+                MaximumHeight = barHeights[LeftBar - 3];
+            }
+            LeftBar++;
+        }
 
 
-        return(MaximumHeight);
+        return (MaximumHeight);
     }
 }
 
