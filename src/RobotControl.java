@@ -1,3 +1,5 @@
+import java.util.Stack;
+
 /*
  * Copyright (c) 2016.
  * kin0025 aka Alexander Kinross-Smith
@@ -24,6 +26,7 @@ class RobotControl {
         //todo- pathing properly. Add pathing support for blocks placed after initialisation.
         //todo- Path around bars. ensure that bars will not block the path of other blocks and take that into account when choosing optimal bar to place on.
         //todo- Add actual comments for newer pathing stuff.
+        //todo- vary height of crane stem through estimated final column height.
         int height = 2;         // Initial height of arm 1
         int width = 1;         // Initial width of arm 2
         int drop = 0;         // Initial depth of arm 3
@@ -36,15 +39,15 @@ class RobotControl {
             }
             ThreesLoop++;
         }
-        int[] BarOptimised = null;
-        if (NumberOfThreeBlocks >= 1) {
-            BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks);
-        }
         //setting stack height total for the end.
         int StackHeight = 0;
         int BlockRuns = blockHeights.length;
+        int MaxBlockSize = 0;
         while (BlockRuns != 0) {
             StackHeight += blockHeights[BlockRuns - 1];
+            if (MaxBlockSize < blockHeights[BlockRuns - 1]) {
+                MaxBlockSize = blockHeights[BlockRuns - 1];
+            }
             BlockRuns--;
         }
         int MaxHeight = 0;
@@ -55,8 +58,14 @@ class RobotControl {
             }
             BarRuns--;
         }
+        int[] BarOptimised = null;
+        if (NumberOfThreeBlocks >= 1) {
+            BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight);
+        }
         int TopBlockNumber = blockHeights.length;
-        height = moveVerticalTo(13, height);
+        if (MaxHeight + MaxBlockSize > StackHeight + 1) {
+            height = moveVerticalTo(MaxHeight + MaxBlockSize, height);
+        } else height = moveVerticalTo(StackHeight + 1, height);
         int BarOneHeight = 0; //Initialising outside of loop as we don't want these set to zero again.
         int BarTwoHeight = 0;
         int BarThreesPosition = 0;
@@ -87,11 +96,8 @@ class RobotControl {
             width = moveHorizontalTo(MoveTo, width);
             drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
             r.drop();
-            if (StackHeight + 1 > MinMoveHeight) {
-                drop = moveCraneToPosition(StackHeight, height, drop);
-            } else drop = moveCraneToPosition(MinMoveHeight, height, drop); //replaces some other logic
             if (CurrentBlock == 3) {
-                barHeights[BarThreesPosition] = barHeights[BarThreesPosition] + CurrentBlock;
+                barHeights[BarOptimised[BarThreesPosition]] = barHeights[BarOptimised[BarThreesPosition]] + 3;
                 BarThreesPosition++;
             } else if (CurrentBlock == 1) {
                 BarOneHeight++;
@@ -99,6 +105,12 @@ class RobotControl {
                 BarTwoHeight = BarTwoHeight + 2;
             }
             NumberBlocks--;
+            if (NumberBlocks > 0) {
+                MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
+                if (StackHeight + 1 > MinMoveHeight) {
+                    drop = moveCraneToPosition(StackHeight, height, drop);
+                } else drop = moveCraneToPosition(MinMoveHeight, height, drop); //replaces some other logic
+            }
         }
     }
 
@@ -170,14 +182,13 @@ class RobotControl {
         return (Drop);
     }
 
-    public int[] optimisePathing(int barHeights[], int NumberOfThrees) { //literally broken, need more debugging
+    public int[] optimisePathing(int barHeights[], int NumberOfThrees, int MaxHeight) { //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
         int BarRuns = 0; // We can assume that there are always 6 bars
         int[] BarNumbers = {0, 0, 0, 0, 0, 0, 0};
         int[] OptimisationBars = {0, 0, 0, 0, 0, 0, 0};
         int[] Optimisation = {21, 22, 23, 24, 25, 26, 27};
         while (BarRuns <= 5) {
             OptimisationBars[BarRuns] = (7 - barHeights[BarRuns]) + (6 - BarRuns); //This should give {9,11,9,7,3,7}
-            //End result should be {4,5,6,0/2,2/0,1}
             BarRuns++;
         }
         BarRuns = 0;
@@ -281,14 +292,12 @@ class RobotControl {
 
     public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar, int BarOneHeight, int BarTwoHeight) {
         int MaximumHeight = 0;
-        if (LeftBar < 3) {
-            LeftBar = 3;
-        }
         while (5 >= LeftBar - 3) {
-            if (barHeights[LeftBar - 3] >= MaximumHeight) {
+            if (LeftBar >= 3) {
+                if (barHeights[LeftBar - 3] >= MaximumHeight) {
                 MaximumHeight = barHeights[LeftBar - 3];
-            }
-            if (LeftBar <= 2) {
+                }
+            } else if (LeftBar <= 2) {
                 if (BarOneHeight >= MaximumHeight) {
                     MaximumHeight = BarOneHeight;
                 }
