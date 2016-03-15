@@ -218,7 +218,7 @@ class RobotControl {
 
     public void controlMechanismC(int barHeights[], int blockHeights[]) {
         //todo -  once i know how to use for loops, get rid of some of these horrible while loops
-        //todo- pathing properly. Don't asume all bars have a size 3 block on top.
+        //todo- pathing properly. Don't assume all bars have a size 3 block on top.
         //todo- Path around bars. ensure that bars will not block the path of other blocks and take that into account when choosing optimal bar to place on.
         //todo- Add actual comments for newer pathing stuff.
         int height = 2;         // Initial height of arm 1
@@ -288,8 +288,8 @@ class RobotControl {
                 drop = moveCraneToPosition(StackHeight, height, drop);
             } else drop = moveCraneToPosition(MaxMoveHeight + 3, height, drop); //replaces some other logic
             if (CurrentBlock == 3) {
-                BarThreesPosition++;
                 barHeights[BarThreesPosition] = barHeights[BarThreesPosition] + CurrentBlock;
+                BarThreesPosition++;
             } else if (CurrentBlock == 1) {
                 BarOneHeight++;
             } else {
