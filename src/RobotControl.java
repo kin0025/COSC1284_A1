@@ -82,7 +82,7 @@ class RobotControl {
                 MoveTo = BarOptimised[BarThreesPosition] + 3;
                 currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
             }
-            int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo);
+            int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
             drop = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, height, drop);
             width = moveHorizontalTo(MoveTo, width);
             drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
@@ -279,14 +279,22 @@ class RobotControl {
 
     }
 
-    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar) {
-        int MaximumHeight = 0;//
+    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar, int BarOneHeight, int BarTwoHeight) {
+        int MaximumHeight = 0;
         if (LeftBar < 3) {
             LeftBar = 3;
         }
         while (5 >= LeftBar - 3) {
             if (barHeights[LeftBar - 3] >= MaximumHeight) {
                 MaximumHeight = barHeights[LeftBar - 3];
+            }
+            if (LeftBar <= 2) {
+                if (BarOneHeight >= MaximumHeight) {
+                    MaximumHeight = BarOneHeight;
+                }
+                if (BarTwoHeight >= MaximumHeight) {
+                    MaximumHeight = BarTwoHeight;
+                }
             }
             LeftBar++;
         }
