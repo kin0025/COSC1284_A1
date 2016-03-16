@@ -15,129 +15,16 @@ class RobotControl {
         this.r = r;
     }
 
-    public void control(int barHeights[], int blockHeights[]) {//sampleControlMechanism(barHeights,blockHeights);
-//controlMechanismLoopedA(barHeights, blockHeights);
-//controlMechanismLoopedB(barHeights, blockHeights);
-//        controlMechanismOptimisedB(barHeights, blockHeights);
+    public void control(int barHeights[], int blockHeights[]) {
         controlMechanismOptimisedC(barHeights, blockHeights);
 
     }
 
-    public void controlMechanismC(int barHeights[], int blockHeights[]) {
-        int height = 2;         // Initial height of arm 1
-        int width = 1;         // Initial width of arm 2
-        int drop = 0;         // Initial depth of arm 3
-        int NumberOfBlocks = blockHeights.length; //How many blocks need to be moved.
-        int NumberOfThreeBlocks = 0;// Count the number of blocks that need to be put on bars
-        byte ThreesLoop = 0;
-        while (ThreesLoop != blockHeights.length) {
-            if (blockHeights[ThreesLoop] == 3) {
-                NumberOfThreeBlocks++;
-            }
-            ThreesLoop++;
-        }
-        //setting stack height total for the end.
-        int StackHeight = 0;
-        int BlockRuns = blockHeights.length;
-        int MaxBlockSize = 0;
-        int FirstTwo = 100;
-        int FirstOne = 100;
-        while (BlockRuns != 0) {//A loop that runs code for analysing the blocks
-            StackHeight += blockHeights[BlockRuns - 1];//Gives us the total height of the initial stack.
-            if (MaxBlockSize < blockHeights[BlockRuns - 1]) {
-                MaxBlockSize = blockHeights[BlockRuns - 1];
-            }
-            if (blockHeights[BlockRuns - 1] == 2 && FirstTwo == 100) {
-                FirstTwo = BlockRuns - 1;
-            }
-            if (blockHeights[BlockRuns - 1] == 1 && FirstOne == 100) {
-                FirstOne = BlockRuns - 1;
-            }
-            BlockRuns--;
-        }
-        int MaxHeight = 0;
-        int BarRuns = 6;
-        while (BarRuns != 0) { //Stuff that analyses the Bar Runs function
-            if (MaxHeight < barHeights[BarRuns - 1]) {
-                MaxHeight = barHeights[BarRuns - 1];
-            }
-            BarRuns--;
-        }
-        int[] BarOptimised = null;
-        if (NumberOfThreeBlocks >= 1) {
-            BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight);
-        }
-        int MaxStackedHeight = 0;//Height of all one and two high blocks is not needed, as StackHeight will always be larger.
-        if (MaxBlockSize == 3) { //todo- If 3 is before any other number. Fake place the three ontop of the bars. What is the next smallest block apart from 3? - height = Max Stack + Next smallest bar.
-            int x = NumberOfThreeBlocks;
-            int MaxHeightBar;
-            while (x != 0) { //Setting the maximum height blocks will take up.
-                if (MaxStackedHeight < barHeights[BarOptimised[x - 1]] + 3) {
-                    MaxStackedHeight = barHeights[BarOptimised[x - 1]] + 3;
-                }
-                x--;
-            }//End while
-        }
-
-        if (MaxStackedHeight >= StackHeight + 1) { //Move to the highest expected point.
-            height = moveVerticalTo(MaxStackedHeight + 1, height);
-        } else height = moveVerticalTo(StackHeight + 1, height);
-//        height = moveVerticalTo(13, height);
-        int TopBlockNumber = blockHeights.length;
-        int BarOneHeight = 0; //Initialising outside of loop as we don't want these set to zero again.
-        int BarTwoHeight = 0;
-        int BarThreesPosition = 0;
-        while (NumberOfBlocks != 0) { //Doing the actual movement
-            int CurrentBlock = blockHeights[TopBlockNumber - 1];
-            TopBlockNumber--;
-            //Move to the stack
-            width = moveHorizontalTo(10, width);
-            //Drop to the top position of the stack
-            drop = moveCraneToPosition(StackHeight, height, drop);
-            r.pick();
-            width = moveHorizontalTo(9, width);
-            StackHeight = StackHeight - CurrentBlock;
-            int MoveTo;
-            int currentBarHeight;
-            if (CurrentBlock == 1) {
-                MoveTo = 1;
-                currentBarHeight = BarOneHeight;
-            } else if (CurrentBlock == 2) {
-                MoveTo = 2;
-                currentBarHeight = BarTwoHeight;
-            } else {
-                MoveTo = BarOptimised[BarThreesPosition] + 3;
-                currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
-            }
-            int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-            drop = moveCraneToPosition(MinMoveHeight + CurrentBlock, height, drop);
-            width = moveHorizontalTo(MoveTo, width);
-            drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
-            r.drop();
-            if (CurrentBlock == 3) {
-                barHeights[BarOptimised[BarThreesPosition]] = barHeights[BarOptimised[BarThreesPosition]] + 3;
-                BarThreesPosition++;
-            } else if (CurrentBlock == 1) {
-                BarOneHeight++;
-            } else {
-                BarTwoHeight = BarTwoHeight + 2;
-            }
-            NumberOfBlocks--;
-            if (NumberOfBlocks > 0) {
-                MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-                if (StackHeight + 1 > MinMoveHeight) {
-                    drop = moveCraneToPosition(StackHeight, height, drop);
-                } else drop = moveCraneToPosition(MinMoveHeight, height, drop); //replaces some other logic
-            }
-        }
-    }
-
     public void controlMechanismOptimisedC(int barHeights[], int blockHeights[]) {
         //todo -  once i know how to use for loops, get rid of some of these horrible while loops
-        //todo- pathing properly. Add pathing support for blocks placed after initialisation.
-        //todo- Path around bars. ensure that bars will not block the path of other blocks and take that into account when choosing optimal bar to place on.
-        //todo- Add actual comments for newer pathing stuff.
         //todo Optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
+        //todo- take bar height into account when adding pathing height stuff.
+        //todo- Add actual comments for newer pathing stuff.
         //Setting cranes initial position as variables
         int[] Position;
         Position = new int[3];
@@ -146,7 +33,7 @@ class RobotControl {
         Position[2] = 0;         // Initial drop of arm 3
         int NumberOfBlocks = blockHeights.length; //How many blocks need to be moved.
 
-        //Iniialising some variables that are used throughout.
+        //Initialising some variables that are used throughout.
         int BlockRuns = blockHeights.length; // Run the loop for as many times as there are blocks.
         //Initialising and declaring variables -  to be incremented in a loop
         int StackHeight = 0;
@@ -183,7 +70,8 @@ class RobotControl {
         }
 
         //Initialise a variable
-        int[] BarOptimised = null;
+        int[] BarOptimised;
+        BarOptimised = new int[7];
         if (NumberOfThreeBlocks >= 1) { //We only need to optimise for Bars if there are blocks to be placed on them.
             BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
         }
@@ -472,41 +360,6 @@ class RobotControl {
 
         return (MaximumHeight);
     }
-
-    @Deprecated
-    public int moveCraneToPosition(int MoveTo, int height, int drop) { //Added some stopgap stuff for original part c.
-        MoveTo++;
-        int[] Position;
-        Position = new int[3]; //Some shitty conversion from array to int.
-        Position[0] = height;
-        Position[2] = drop;
-        int VerticalPosition = Position[0] - Position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
-        while (VerticalPosition != MoveTo) {
-            VerticalPosition = Position[0] - Position[2];
-            if (MoveTo > Position[0]) {//If we are trying to move too high, increment the height. This is dangerous, as we don't pass the height back. We need to check for a negative drop at the other end.
-                r.up();
-                Position[0]++;
-            }
-            if (MoveTo < 15 && MoveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
-
-                if (VerticalPosition < MoveTo) {
-                    r.raise();
-                    Position[2]--; //Still change the drop value, not the position one, as it is updated every run, and we need to pass the drop value back at the end.
-                }
-                if (VerticalPosition > MoveTo) {
-                    r.lower();
-                    Position[2]++;
-                }
-
-            } else if (MoveTo > 14) { //If trying to move too high set to acceptable height
-                MoveTo = 14;
-            } else {
-                MoveTo = 0;
-            }
-        }
-        return (Position[2]);//Return drop. height may change whilst function runs. - See checks during movement loop.
-    }
-
 
 }
 
