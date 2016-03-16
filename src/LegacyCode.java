@@ -431,6 +431,7 @@ public class LegacyCode {
         return (MaximumHeight);
     }
 
+    @Deprecated
     public int[] optimisePathing(int barHeights[]) { //literally broken, need more debugging
         int BarRuns = 0; // We can assume that there are always 6 bars
         int[] BarNumbers = {0, 0, 0, 0, 0, 0, 0};
