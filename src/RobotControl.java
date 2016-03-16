@@ -24,11 +24,6 @@ class RobotControl {
     }
 
     public void controlMechanismC(int barHeights[], int blockHeights[]) {
-        //todo -  once i know how to use for loops, get rid of some of these horrible while loops
-        //todo- pathing properly. Add pathing support for blocks placed after initialisation.
-        //todo- Path around bars. ensure that bars will not block the path of other blocks and take that into account when choosing optimal bar to place on.
-        //todo- Add actual comments for newer pathing stuff.
-        //todo Optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
         int height = 2;         // Initial height of arm 1
         int width = 1;         // Initial width of arm 2
         int drop = 0;         // Initial depth of arm 3
@@ -115,7 +110,7 @@ class RobotControl {
                 currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
             }
             int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-            drop = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, height, drop);
+            drop = moveCraneToPosition(MinMoveHeight + CurrentBlock, height, drop);
             width = moveHorizontalTo(MoveTo, width);
             drop = moveCraneToPosition(currentBarHeight + CurrentBlock, height, drop);
             r.drop();
@@ -146,9 +141,9 @@ class RobotControl {
         //Setting cranes initial position as variables
         int[] Position;
         Position = new int[3];
-        Position[0] = 2; // Initial height of arm 1
+        Position[0] = 2;         // Initial height of arm 1
         Position[1] = 1;         // Initial width of arm 2
-        Position[2] = 0;         // Initial depth of arm 3
+        Position[2] = 0;         // Initial drop of arm 3
         int NumberOfBlocks = blockHeights.length; //How many blocks need to be moved.
 
         //Iniialising some variables that are used throughout.
@@ -222,7 +217,7 @@ class RobotControl {
             //Move to the stack
             Position[1] = moveHorizontalTo(10, Position[1]);
             //Drop to the top position of the stack
-            Position[2] = moveCraneToPosition(StackHeight, Position[0], Position[2]);
+            Position = moveCraneToPosition(StackHeight, Position);
             r.pick();
             Position[1] = moveHorizontalTo(9, Position[1]);
             StackHeight = StackHeight - CurrentBlock;
@@ -239,9 +234,9 @@ class RobotControl {
                 currentBarHeight = barHeights[BarOptimised[BarThreesPosition]];
             }
             int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-            Position[2] = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, Position[0], Position[2]);
+            Position = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, Position);
             Position[1] = moveHorizontalTo(MoveTo, Position[1]);
-            Position[2] = moveCraneToPosition(currentBarHeight + CurrentBlock, Position[0], Position[2]);
+            Position = moveCraneToPosition(currentBarHeight + CurrentBlock, Position);
             r.drop();
             if (CurrentBlock == 3) {
                 barHeights[BarOptimised[BarThreesPosition]] = barHeights[BarOptimised[BarThreesPosition]] + 3;
@@ -255,9 +250,9 @@ class RobotControl {
             if (NumberOfBlocks > 0) {
                 MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
                 if (StackHeight + 1 > MinMoveHeight) {
-                    Position[2] = moveCraneToPosition(StackHeight, Position[0], Position[2]);
+                    Position = moveCraneToPosition(StackHeight, Position);
                 } else
-                    Position[2] = moveCraneToPosition(MinMoveHeight, Position[0], Position[2]); //replaces some other logic
+                    Position = moveCraneToPosition(MinMoveHeight, Position); //replaces some other logic
             }
         }
     }
@@ -306,24 +301,24 @@ class RobotControl {
         return (Position); //Return our position so that it stays up to date
     }
 
-    public int moveCraneToPosition(int MoveTo, int Height, int Drop) {
+    public int[] moveCraneToPosition(int MoveTo, int[] Position) {
         MoveTo++;
-        int Position = Height - Drop; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
-        while (Position != MoveTo) {
-            Position = Height - Drop;
-            if (MoveTo > Height) {//If we are trying to move too high, increment the height. This is dangerous, as we don't pass the height back. We need to check for a negative drop at the other end.
+        int VerticalPosition = Position[0] - Position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
+        while (VerticalPosition != MoveTo) {
+            VerticalPosition = Position[0] - Position[2];
+            if (MoveTo > Position[0]) {//If we are trying to move too high, increment the height. This is dangerous, as we don't pass the height back. We need to check for a negative drop at the other end.
                 r.up();
-                Height++;
+                Position[0]++;
             }
             if (MoveTo < 15 && MoveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
 
-                if (Position < MoveTo) {
+                if (VerticalPosition < MoveTo) {
                     r.raise();
-                    Drop--; //Still change the drop value, not the position one, as it is updated every run, and we need to pass the drop value back at the end.
+                    Position[2]--; //Still change the drop value, not the position one, as it is updated every run, and we need to pass the drop value back at the end.
                 }
-                if (Position > MoveTo) {
+                if (VerticalPosition > MoveTo) {
                     r.lower();
-                    Drop++;
+                    Position[2]++;
                 }
 
             } else if (MoveTo > 14) { //If trying to move too high set to acceptable height
@@ -332,7 +327,7 @@ class RobotControl {
                 MoveTo = 0;
             }
         }
-        return (Drop);//Return drop. height may change whilst function runs. - See checks during movement loop.
+        return (Position);//Return drop. height may change whilst function runs. - See checks during movement loop.
     }
 
     public int[] optimisePathing(int barHeights[], int NumberOfThrees, int MaxHeight) { //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
@@ -477,6 +472,41 @@ class RobotControl {
 
         return (MaximumHeight);
     }
+
+    @Deprecated
+    public int moveCraneToPosition(int MoveTo, int height, int drop) { //Added some stopgap stuff for original part c.
+        MoveTo++;
+        int[] Position;
+        Position = new int[3]; //Some shitty conversion from array to int.
+        Position[0] = height;
+        Position[2] = drop;
+        int VerticalPosition = Position[0] - Position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
+        while (VerticalPosition != MoveTo) {
+            VerticalPosition = Position[0] - Position[2];
+            if (MoveTo > Position[0]) {//If we are trying to move too high, increment the height. This is dangerous, as we don't pass the height back. We need to check for a negative drop at the other end.
+                r.up();
+                Position[0]++;
+            }
+            if (MoveTo < 15 && MoveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
+
+                if (VerticalPosition < MoveTo) {
+                    r.raise();
+                    Position[2]--; //Still change the drop value, not the position one, as it is updated every run, and we need to pass the drop value back at the end.
+                }
+                if (VerticalPosition > MoveTo) {
+                    r.lower();
+                    Position[2]++;
+                }
+
+            } else if (MoveTo > 14) { //If trying to move too high set to acceptable height
+                MoveTo = 14;
+            } else {
+                MoveTo = 0;
+            }
+        }
+        return (Position[2]);//Return drop. height may change whilst function runs. - See checks during movement loop.
+    }
+
 
 }
 
