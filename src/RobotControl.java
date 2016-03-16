@@ -24,7 +24,6 @@ class RobotControl {
         //todo-  Once I know how to use for loops, get rid of some of these horrible while loops
         //todo-  Optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
         //todo-  Take bar height into account when adding pathing height stuff.
-        //todo-  Add actual comments for newer pathing stuff.
         //Setting cranes initial position as variables
         int[] Position;
         Position = new int[3];
