@@ -337,7 +337,7 @@ class RobotControl {
 
     }
 
-    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar, int BarOneHeight, int BarTwoHeight) {
+    public int checkMaxPathingHeightToBars(int barHeights[], int LeftBar, int BarOneHeight, int BarTwoHeight) { //todo-  Add comments for this area.
         int MaximumHeight = 0;
         while (5 >= LeftBar - 3) {
             if (LeftBar >= 3) {
