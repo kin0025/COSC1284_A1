@@ -22,8 +22,6 @@ class RobotControl {
 
     public void controlMechanismOptimisedC(int barHeights[], int blockHeights[]) {
         //todo-  Once I know how to use for loops, get rid of some of these horrible while loops
-        //todo-  Optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
-        //todo-  Take bar height into account when adding pathing height stuff.
         //Setting cranes initial position as variables
         int[] Position;
         Position = new int[3];
@@ -39,17 +37,21 @@ class RobotControl {
         int MaxBlockSize = 0;
         int FirstTwo = 100;
         int FirstOne = 100;
+        int FirstThree = 100;
         int NumberOfThreeBlocks = 0;         // Count the number of blocks that need to be put on bars
         while (BlockRuns != 0) {//A loop that runs code for analysing the blocks
             StackHeight += blockHeights[BlockRuns - 1];// Add the current block onto the running total
-            if (MaxBlockSize < blockHeights[BlockRuns - 1]) { //If current block is larger than all previous blocks, set the largest block to the current one.
-                MaxBlockSize = blockHeights[BlockRuns - 1];
-            }
-            if (blockHeights[BlockRuns - 1] == 2 && FirstTwo == 100) { //If current block is equal to 2 and FirstTwo has not been changed since decleration, the current block must be the fist one that is two high.
+            if (blockHeights[BlockRuns - 1] == 2 && FirstTwo == 100) { //If current block is equal to 2 and FirstTwo has not been changed since declaration, the current block must be the fist one that is two high.
                 FirstTwo = BlockRuns - 1;
             }
             if (blockHeights[BlockRuns - 1] == 1 && FirstOne == 100) {//Same as above, but for blocks one high.
                 FirstOne = BlockRuns - 1;
+            }
+            if (MaxBlockSize < blockHeights[BlockRuns - 1]) { //If current block is larger than all previous blocks, set the largest block to the current one.
+                MaxBlockSize = blockHeights[BlockRuns - 1];
+            }
+            if (blockHeights[BlockRuns - 1] == 3 && FirstThree == 100) {//Same as above, but for blocks one high.
+                FirstThree = BlockRuns - 1;
             }
             if (blockHeights[BlockRuns - 1] == 3) { //If the current block been examined is 3 high, increment the counter.
                 NumberOfThreeBlocks++;
@@ -71,8 +73,9 @@ class RobotControl {
         //Initialise a variable
         int[] BarOptimised;
         BarOptimised = new int[7];
+
         if (NumberOfThreeBlocks >= 1) { //We only need to optimise for Bars if there are blocks to be placed on them.
-            BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
+            BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight, blockHeights); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
         }
 
         //Finding the maximum height that the blocks will reach when placed on bars
@@ -217,7 +220,10 @@ class RobotControl {
         return (Position);//Return drop. height may change whilst function runs. - See checks during movement loop.
     }
 
-    public int[] optimisePathing(int barHeights[], int NumberOfThrees, int MaxHeight) { //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
+    public int[] optimisePathing(int barHeights[], int NumberOfThrees, int MaxHeight, int blockHeights[]) {
+        //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
+        //todo-  Optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
+        //todo-  Take bar height into account when adding pathing height stuff.
         int BarRuns = 0; // We can assume that there are always 6 bars
         int[] BarNumbers = {0, 0, 0, 0, 0, 0, 0};
         int[] OptimisationBars = {0, 0, 0, 0, 0, 0, 0};
@@ -226,16 +232,62 @@ class RobotControl {
             OptimisationBars[BarRuns] = (7 - barHeights[BarRuns]) + (6 - BarRuns); //This should give {9,11,9,7,3,7}
             BarRuns++;
         }
-        OptimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last. //todo- add a check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
-        BarRuns = 0;
-        while (BarRuns <= 5) {//Set Optimisation values for height added above max. //todo only run this if there are blocks less than 3 high below blocks that are 3 high.
-            int OptimisationAdd;
-            OptimisationAdd = (barHeights[BarRuns] + 3) - MaxHeight;
-            if (OptimisationAdd < 0) {
-                OptimisationAdd = 0;
+        int BlockRuns = blockHeights.length;
+        int FirstTwo = 100;
+        int FirstOne = 100;
+        int FirstThree = 100;
+        int LastThreeHeight = 0;
+        int LastThree = 0;
+        while (BlockRuns != 0) {//A loop that runs code for analysing the blocks
+            if (blockHeights[BlockRuns - 1] == 2 && FirstTwo == 100) { //If current block is equal to 2 and FirstTwo has not been changed since declaration, the current block must be the fist one that is two high.
+                FirstTwo = BlockRuns - 1;
             }
-            OptimisationBars[BarRuns] = OptimisationBars[BarRuns] + OptimisationAdd; //This should give {9,11,9,7,3,7}
-            BarRuns++;
+            if (blockHeights[BlockRuns - 1] == 1 && FirstOne == 100) {//Same as above, but for blocks one high.
+                FirstOne = BlockRuns - 1;
+            }
+            if (blockHeights[BlockRuns - 1] == 3 && FirstThree == 100) {//Same as above, but for blocks one high.
+                FirstThree = BlockRuns - 1;
+            }
+            BlockRuns--;
+        }// End blocks decrement loop
+        BlockRuns = 0;
+        while (BlockRuns != blockHeights.length) {
+            if (LastThree == 0) {
+                LastThreeHeight += blockHeights[BlockRuns];
+            }
+            if (blockHeights[BlockRuns] == 3 && LastThree == 0) {
+                LastThree = BlockRuns;
+
+            }
+            BlockRuns++;
+        }
+        if (LastThreeHeight < barHeights[5]) {
+            OptimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
+        } else
+            OptimisationBars[5] = (LastThreeHeight - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+
+
+        boolean ThreesBefore = false;
+        int FirstNonThree = 0;
+        if (FirstThree > FirstOne || FirstThree > FirstTwo) {
+            ThreesBefore = true;
+            if (FirstOne >= FirstTwo) {
+                FirstNonThree = FirstOne;
+            } else FirstNonThree = FirstTwo;
+        }
+
+//todo- multiply the Added value by the number of blocks that will pass over it
+        if (ThreesBefore) {
+            BarRuns = 0;
+            while (BarRuns <= 5) {//Set Optimisation values for height added above max. //todo only run this if there are blocks less than 3 high below blocks that are 3 high.
+                int OptimisationAdd;
+                OptimisationAdd = (barHeights[BarRuns] + 3) - MaxHeight;
+                if (OptimisationAdd < 0) {
+                    OptimisationAdd = 0;
+                }
+                OptimisationBars[BarRuns] = OptimisationBars[BarRuns] + OptimisationAdd; //This should give {9,11,9,7,3,7}
+                BarRuns++;
+            }
         }
         BarRuns = 0;
         while (BarRuns <= 5) {
@@ -292,14 +344,7 @@ class RobotControl {
             }
             BarRuns++;
         }
-        //convert the bar numbers array to coordinates
-        int x = 0;
-        while (x <= 5) {
-//            BarNumbers[x] = BarNumbers[x]+3;
-            System.out.print(BarNumbers[x] + ",");
-            x++;
 
-        }
         //For scenario 2 output should be 0,3,4,5,10
         int[] NumbersFinal = {10, 10, 10, 10, 10};
         int CurrentRun = NumberOfThrees - 1;
@@ -358,6 +403,18 @@ class RobotControl {
 
 
         return (MaximumHeight);
+    }
+
+    public int notThreesStackCounter(int barHeights[], int CurrentBlock) {
+        int BarRuns = barHeights.length - (CurrentBlock + 1);
+        int Result = 0;
+        while (BarRuns > 0) {
+            if (barHeights[BarRuns] == 1 || barHeights[BarRuns] == 2) {
+                Result++;
+            }
+
+        }
+        return (Result);
     }
 
 }
