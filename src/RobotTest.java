@@ -29,7 +29,8 @@ public class RobotTest {
             System.out.println();
 
             switch (Integer.valueOf(response)) {
-
+                case 0:
+                    System.exit(0);
                 case 1:
                     runStageATest();
                     break;
@@ -168,6 +169,7 @@ public class RobotTest {
         Scanner RunsInput = new Scanner(System.in);
         System.out.println("Enter the number of runs you want this to do");
         int runs = RunsInput.nextInt();
+        int runsMax = runs;
         while (1 <= runs) {
             //generate random number between 1 & 7
             String BarA = Integer.toString(1 + (int) (Math.random() * 7));
@@ -184,7 +186,7 @@ public class RobotTest {
                 Blockcreate = Blocks();
             }
             //Print the final result
-            System.out.print("Running random test config:");
+            System.out.print("Running random test number: " + (runsMax - runs) + " and config:");
             System.out.println(Bars + " " + Blockcreate);
             String[] FinalOutput = {Bars, Blockcreate};
             Robot.main(FinalOutput);
@@ -315,24 +317,15 @@ public class RobotTest {
                 "************************** ROBOT TEST HARNESS MENU **************************");
         System.out.println();
 
-        System.out.println(
-                "1. Stage A Test 1 - bars = 777777, blocks = 3333 (default bar / block config)\n");
-        System.out.println(
-                "2. Stage B Test 1 - bars = 734561, blocks = 3333 (default block config)\n");
-        System.out.println(
-                "3. Stage B Test 2 - bars = 137561, blocks = 3333 (default block config)\n");
-        System.out.println(
-                "4. Stage C Test 1 - bars = 734561, blocks = 231231\n");
-        System.out
-                .println("5. Stage C Test 2 - bars = 222222, blocks = 2111\n");
-        System.out
-                .println("6. Stage C Test 3 - bars = 444444, blocks = 1222\n");
-        System.out
-                .println("7. Stage C Test 4 - bars = 676767, blocks = 1233\n");
-        System.out
-                .println("8. Stage C Test 5 - bars = 676767, blocks = 1332\n");
-        System.out.println(
-                "9. Stage C Test Custom (user supplies bar / block config)\n");
+        System.out.println("1. Stage A Test 1 - bars = 777777, blocks = 3333 (default bar / block config)\n");
+        System.out.println("2. Stage B Test 1 - bars = 734561, blocks = 3333 (default block config)\n");
+        System.out.println("3. Stage B Test 2 - bars = 137561, blocks = 3333 (default block config)\n");
+        System.out.println("4. Stage C Test 1 - bars = 734561, blocks = 231231\n");
+        System.out.println("5. Stage C Test 2 - bars = 222222, blocks = 2111\n");
+        System.out.println("6. Stage C Test 3 - bars = 444444, blocks = 1222\n");
+        System.out.println("7. Stage C Test 4 - bars = 676767, blocks = 1233\n");
+        System.out.println("8. Stage C Test 5 - bars = 676767, blocks = 1332\n");
+        System.out.println("9. Stage C Test Custom (user supplies bar / block config)\n");
         System.out.println("10. Run All Tests (1 - 8)\n");
         System.out.println("11. Run Random Test\n");
         System.out.println("0. Exit Test Harness\n");
