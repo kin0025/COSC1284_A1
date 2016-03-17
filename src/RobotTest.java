@@ -188,6 +188,7 @@ public class RobotTest {
             System.out.println(Bars + " " + Blockcreate);
             String[] FinalOutput = {Bars, Blockcreate};
             Robot.main(FinalOutput);
+
             runs--;
         }
     }

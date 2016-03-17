@@ -16,6 +16,7 @@ class RobotControl {
     }
 
     public void control(int barHeights[], int blockHeights[]) {
+        r.speedUp(100);//For testing large numbers of iterations.
         controlMechanismOptimisedC(barHeights, blockHeights);
 
     }
@@ -77,7 +78,8 @@ class RobotControl {
         if (NumberOfThreeBlocks >= 1) { //We only need to optimise for Bars if there are blocks to be placed on them.
             BarOptimised = optimisePathing(barHeights, NumberOfThreeBlocks, MaxHeight, blockHeights); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
         }
-
+/*BarOptimised[0]= 2;
+        BarOptimised[1]= 4;*/
         //Finding the maximum height that the blocks will reach when placed on bars
         int MaxStackedHeight = 0;//Height of all one and two high blocks is not needed, as StackHeight will always be larger.
         if (MaxBlockSize == 3) {
@@ -88,13 +90,13 @@ class RobotControl {
                 }
                 x--;
             }//End while
-        }
-
-        if (MaxStackedHeight >= StackHeight + 1) { //Move to the highest expected point.
-            Position[0] = moveVerticalTo(MaxStackedHeight + 1, Position[0]);
+        }//End if
+        if (MaxHeight < MaxStackedHeight) { //Finding maximum expected height.
+            MaxHeight = MaxStackedHeight;
+        }//End if
+        if (MaxHeight >= StackHeight + 1) { //Move to the highest expected point.
+            Position[0] = moveVerticalTo(MaxHeight + 1, Position[0]);
         } else Position[0] = moveVerticalTo(StackHeight + 1, Position[0]);
-
-//      height = moveVerticalTo(13, height); //inefficient, but works for all solutions.
 
         //Initialise and declare for the movement loop
         int TopBlockNumber = blockHeights.length;
@@ -196,11 +198,10 @@ class RobotControl {
         int VerticalPosition = Position[0] - Position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
         while (VerticalPosition != MoveTo) {
             VerticalPosition = Position[0] - Position[2];
-            if (MoveTo > Position[0]) {//If we are trying to move too high, increment the height. This is dangerous, as we don't pass the height back. We need to check for a negative drop at the other end.
+            if (MoveTo > Position[0]) {//If we are trying to move too high, increment the height.
                 r.up();
                 Position[0]++;
-            }
-            if (MoveTo < 15 && MoveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
+            } else if (MoveTo < 15 && MoveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
 
                 if (VerticalPosition < MoveTo) {
                     r.raise();
@@ -250,6 +251,15 @@ class RobotControl {
             }
             BlockRuns--;
         }// End blocks decrement loop
+        if (FirstOne == 100) {
+            FirstOne = 0;
+        }
+        if (FirstTwo == 100) {
+            FirstTwo = 0;
+        }
+        if (FirstThree == 100) {
+            FirstThree = 0;
+        }
         BlockRuns = 0;
         while (BlockRuns != blockHeights.length) {
             if (LastThree == 0) {
@@ -277,14 +287,15 @@ class RobotControl {
         }
 
 //todo- multiply the Added value by the number of blocks that will pass over it
-        if (ThreesBefore) {
+        if (ThreesBefore) {//This is an imperfect solution.- We really need to examine each bar in an ordered fashion to find the number of blocks, reorder and re-examine. However this would be complex and computationally expensive, when this close approximation will suffice.
             BarRuns = 0;
-            while (BarRuns <= 5) {//Set Optimisation values for height added above max. //todo only run this if there are blocks less than 3 high below blocks that are 3 high.
+            while (BarRuns <= 5) {//Set Optimisation values for height added above max.
                 int OptimisationAdd;
                 OptimisationAdd = (barHeights[BarRuns] + 3) - MaxHeight;
                 if (OptimisationAdd < 0) {
                     OptimisationAdd = 0;
                 }
+                OptimisationAdd = OptimisationAdd * notThreesStackCounter(blockHeights, FirstNonThree);
                 OptimisationBars[BarRuns] = OptimisationBars[BarRuns] + OptimisationAdd; //This should give {9,11,9,7,3,7}
                 BarRuns++;
             }
@@ -405,14 +416,14 @@ class RobotControl {
         return (MaximumHeight);
     }
 
-    public int notThreesStackCounter(int barHeights[], int CurrentBlock) {
-        int BarRuns = barHeights.length - (CurrentBlock + 1);
+    public int notThreesStackCounter(int blockHeights[], int CurrentBlock) {
+        int BlockRuns = 0;
         int Result = 0;
-        while (BarRuns > 0) {
-            if (barHeights[BarRuns] == 1 || barHeights[BarRuns] == 2) {
+        while (BlockRuns != (blockHeights.length - (CurrentBlock))) {
+            if (blockHeights[BlockRuns] == 1 || blockHeights[BlockRuns] == 2) {
                 Result++;
             }
-
+            BlockRuns++;
         }
         return (Result);
     }
