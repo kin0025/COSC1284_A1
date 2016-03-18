@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2016.
+ * kin0025 aka Alexander Kinross-Smith
+ * s3603437@student.rmit.edu.au
+ * alex@akinrosssmith.id.au
+ */
+
+/*
+*@author - Alex Kinross-Smith
+*/
+
+/**
+ * Created by akinr on 18/03/2016.
+ */
+
 import jdk.nashorn.internal.ir.Block;
 
 import java.util.Stack;
@@ -8,21 +23,17 @@ import java.util.Stack;
  * s3603437@student.rmit.edu.au
  * alex@akinrosssmith.id.au
  */
-class RobotControl {
+class RobotControlWorking {
     private Robot r;
 
-    public RobotControl(Robot r) {
+    public RobotControlWorking(Robot r) {
         this.r = r;
     }
-
-    //A level of 0 means no bar height optimisation is not run.
-    //A level of 1 means imperfect, but nonetheless effective optimisation is run
-    //A level of 2 means perfect optimisation runs. NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
-    final int OPTIMISATION_LEVEL = 1;
 
     public void control(int barHeights[], int blockHeights[]) {
         r.speedUp(20);//For testing large numbers of iterations.
         controlMechanismOptimisedC(barHeights, blockHeights);
+
     }
 
     public void controlMechanismOptimisedC(int barHeights[], int blockHeights[]) {
@@ -112,25 +123,15 @@ class RobotControl {
             stackHeight = stackHeight - CurrentBlock;
             int MoveTo;
             int currentBarHeight;
-            switch (CurrentBlock) {
-                case 1:
+            if (CurrentBlock == 1) {
                 MoveTo = 1;
                 currentBarHeight = BarOneHeight;
-                    break;
-                case 2:
+            } else if (CurrentBlock == 2) {
                 MoveTo = 2;
                 currentBarHeight = BarTwoHeight;
-                    break;
-
-                case 3:
+            } else {
                 MoveTo = barOptimised[BarThreesPosition] + 3;
                 currentBarHeight = barHeights[barOptimised[BarThreesPosition]];
-                    break;
-                default:
-                    MoveTo = barOptimised[BarThreesPosition] + 3;
-                    currentBarHeight = barHeights[barOptimised[BarThreesPosition]];
-                    break;
-
             }
             int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
             position = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, position);
@@ -272,110 +273,55 @@ class RobotControl {
             optimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
         } else
             optimisationBars[5] = (lastThreeHeight - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
-
+/*
         boolean threesBefore = false;
         if (firstThree > firstOne || firstThree > firstTwo) {
             threesBefore = true;
         }
 
-        //For run one should be {2,3,4,5} for run 7 should be {2,4}
-//        We should end with optimisation values of {7,5,5,3,3,2} without the add bars
-        //      Once add bars (Number of blocks below 3 * number of units above max height) we can expect (add 4 to bars that are 6 high, add 6 to bars that are 7 high)
-        //     {11,11,9,9,7,7}
-        //   This is not the solution we are looking for. We want something for 8th bar larger than 5th bar.
-//So, what do we do?
-        //We need a new algorithm.
-        //If we create an array of the number of the optimisation value for all potential positions (maxing out at the number of threes) we can potentially get our result.
-        //i.e for bar 3 we get {11,9}, bar 4 {11,8} bar 5 {9,7} bar 6 {9,6} bar 7 {7,5} bar 8 {7,4}. This is quite the conundrum.
-        //I think that to accurately find the shortest path with the least moves, there is no shortcut. We need to generate optimisation values for every possible configuration (treating configurations as a single entity), and find the smallest one. This will be incredibly computationally expensive ( think ^3 +), so a toggle may need to be implemented.
-
-
-//This is an imperfect solution, but is adequate.
-        if (OPTIMISATION_LEVEL == 1) {
-            int[] numbersPrelim;
-            int[] optimisationBarsPrev;
-            for (int barRun = blockHeights.length; barRun >= 0; barRun--) {    //Iterate over this 3 times to get a rough approximation of bar ordering and any affect modified optimisation values from adding max height on will bring.
-                numbersPrelim = optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees, true); //We get our old output - an ordered array of what bars to place on.
-                //We need to take that list, re-run our optimisation bars algorithm to get the ordered result.
-                for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for movements.
-                    optimisationBars[barRuns] = (7 - barHeights[numbersPrelim[barRuns]]) + (6 - numbersPrelim[barRuns]);
-                }
-                for (int barRuns = 0; barRuns <= 5; barRuns++) { //Find the part of numbers final that equals 5, and rerun the equation from before.
-                    if (numbersPrelim[barRuns] == 5) {
-                        if (lastThreeHeight < barHeights[5]) { //As this bar won't have to go up and over something, and then back down, we are fine as long as the final bar that is three high is also lower than the bar. If it is higher, we need to take number of moves down into account, and it may be regarded as lower.
-                            optimisationBars[barRuns] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last. Check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
-                        } else
-                            optimisationBars[barRuns] = (lastThreeHeight - numbersPrelim[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
-                    }
-                }
-                //Then multiply the amount that the stacked bar will protrude over the previous maximum height by the not threes counter.
-                if (threesBefore) {//Only run this if there are one or two high blocks below a three high one
-                    for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for height added above max.
-                        int optimisationAdd;
-                        optimisationAdd = (barHeights[barRuns] + 3) - MaxHeight; //How many units will the block stick up over the maximum bar height?
-                        if (optimisationAdd < 0) { //If it doesn't stick up, we don't want to call a negative number. Instead, set it to zero.
-                            optimisationAdd = 0;
-                        }
-                        int barPotential;
-                        if (barRuns >= numberOfThrees) { //We may have situations where there are more bars than there are blocks. We don't want to try to call too large an index, so set the value to maximum array amount.
-                            barPotential = numberOfThrees - 1;//Subtract one to get a zero array index.
-                        } else barPotential = barRuns;
-                        int[] blockThreesIndex = new int[numberOfThrees];
-                        int counter = 0;
-                        for (int blockRuns = 0; blockRuns != blockHeights.length; blockRuns++) {
-                            if (blockHeights[blockRuns] == 3) {
-                                blockThreesIndex[counter] = blockRuns;
-                                counter++;
-                            }
-                        }
-                        int optimisationMultiply = notThreesStackCounter(blockHeights, blockThreesIndex[barPotential]); //On that result we need to take the array index of each of them, and use it as the height to pass to not threes stack counter.
-                        optimisationAdd *= optimisationMultiply;
-                        optimisationBars[barRuns] += optimisationAdd; //This should give {9,11,9,7,3,7}
-                    }
-
-                }
-                // TODO: 17/03/2016 multiply the added value by the number of blocks that will pass over it.
-                //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
-                //todo-  optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
-                //todo-  Take bar height into account when adding pathing height stuff.
-
-            }
-            //End it here
+        int[] numbersFinal = optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees); //We get our old output - an ordered array of what bars to place on.
+        //We need to take that list, re-run our optimisation bars algorithm to get the ordered result.\
+        for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for movements.
+            optimisationBars[barRuns] = (7 - barHeights[numbersFinal[barRuns]]) + (6 - numbersFinal[barRuns]); //This should give {9,11,9,7,3,7}
         }
-        barNumbers = optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees, false);//Return the final ordered array.
-        int[] numbersFinal = {10, 10, 10, 10, 10};
-        for (int currentRun = numberOfThrees - 1; currentRun != -1; currentRun--) {
-            byte r = 3;
-            if (barNumbers[currentRun] <= numbersFinal[0]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 0) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersFinal[r + 1] = numbersFinal[r];
-                    r--;
-                }
-                numbersFinal[0] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-            } else if (barNumbers[currentRun] <= numbersFinal[1]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 1) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersFinal[r + 1] = numbersFinal[r];
-                    r--;
-                }
-                numbersFinal[1] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-            } else if (barNumbers[currentRun] <= numbersFinal[2]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 2) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersFinal[r + 1] = numbersFinal[r];
-                    r--;
-                }
-                numbersFinal[2] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-            } else if (barNumbers[currentRun] <= numbersFinal[3]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 3) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersFinal[r + 1] = numbersFinal[r];
-                    r--;
-                }
-                numbersFinal[3] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
+        for (int barRuns = 0; barRuns <= 5; barRuns++) { //Find the part of numbers final that equals 5, and rerun the equation from before.
+            if (numbersFinal[barRuns] == 5) {
+                if (lastThreeHeight < barHeights[5]) {
+                    optimisationBars[barRuns] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
+                } else
+                    optimisationBars[barRuns] = (lastThreeHeight - numbersFinal[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
             }
         }
-        return (numbersFinal);//For run one should be {2,3,4,5} for run 7 should be {2,4}
+        //On that result we need to take the array index of each of them, and use it as the height to pass to not threes stack counter.
+
+        //Then multiply the amount that the stacked bar will protrude over the previous maximum height by the not threes counter.
+
+        //Iterate over this 3 times to get a rough approximation of bar ordering and any affect modified optimisation values from adding max height on will bring.
+
+        //Return the final ordered array.
+
+        // TODO: 17/03/2016 multiply the added value by the number of blocks that will pass over it.
+        //todo add max height pathing costs - add more efficient pathing of 3 high blocks - Blocks need to take into account the number of blocks that will be passed over them after they have been placed.
+        //todo-  optimisation is needed for positioning of blocks that are three high. Proposed solution is to calculate the number of blocks after each block that is picked that are less than 3. Use this as a multiplier for the max blocks value.
+        //todo-  Take bar height into account when adding pathing height stuff.
+        if (threesBefore) {//This is an imperfect solution.- We really need to examine each bar in an ordered fashion to find the number of blocks, reorder and re-examine. However this would be complex and computationally expensive, when this close approximation will suffice.
+            for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for height added above max.
+                int optimisationAdd;
+                optimisationAdd = (barHeights[barRuns] + 3) - MaxHeight;
+                if (optimisationAdd < 0) {
+                    optimisationAdd = 0;
+                }
+                optimisationAdd = optimisationAdd * notThreesStackCounter(blockHeights, numbersFinal[barRuns]);
+                optimisationBars[barRuns] = optimisationBars[barRuns] + optimisationAdd; //This should give {9,11,9,7,3,7}
+            }
+
+        }
+*/
+
+        return (optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees));
     }
 
-    public int[] optimisationOrder(int[] optimisationBars, int[] optimisation, int[] barNumbers, int numberOfThrees, boolean heightcalc) {
+    public int[] optimisationOrder(int[] optimisationBars, int[] optimisation, int[] barNumbers, int numberOfThrees) {
         for (int barRuns = 0; barRuns <= 5; barRuns++) {
             byte r = 5;
             // Check the current number against all positions in optimisation.
@@ -429,89 +375,45 @@ class RobotControl {
                 barNumbers[5] = barNumbers[barRuns];
             }
         }
-        if (heightcalc) {
-            int[] numbersPrelim = {10, 10, 10, 10, 10, 10, 10};
-            for (int currentRun = 0; currentRun <= 5; currentRun++) {
-                byte r = 5;
-                if (barNumbers[currentRun] <= numbersPrelim[0]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 0) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersPrelim[r + 1] = numbersPrelim[r];
-                    r--;
-                }
-                    numbersPrelim[0] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersPrelim[1]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 1) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersPrelim[r + 1] = numbersPrelim[r];
-                    r--;
-                }
-                    numbersPrelim[1] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersPrelim[2]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 2) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersPrelim[r + 1] = numbersPrelim[r];
-                    r--;
-                }
-                    numbersPrelim[2] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersPrelim[3]) {// Is the number currently been examined less than the first position in the optimisation array?
-                while (r >= 3) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                    numbersPrelim[r + 1] = numbersPrelim[r];
-                    r--;
-                }
-                    numbersPrelim[3] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersPrelim[4]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 4) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersPrelim[r + 1] = numbersPrelim[r];
-                        r--;
-                    }
-                    numbersPrelim[4] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersPrelim[5]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 5) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersPrelim[r + 1] = numbersPrelim[r];
-                        r--;
-                    }
-                    numbersPrelim[5] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-            }
-        }
-            return (numbersPrelim);
-        } else {
-            //For scenario 2 output should be 0,3,4,5,10
-            int[] numbersFinal = {10, 10, 10, 10, 10};
-            for (int currentRun = numberOfThrees - 1; currentRun != -1; currentRun--) {
-                byte r = 3;
-                if (barNumbers[currentRun] <= numbersFinal[0]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 0) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersFinal[r + 1] = numbersFinal[r];
-                        r--;
-                    }
-                    numbersFinal[0] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersFinal[1]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 1) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersFinal[r + 1] = numbersFinal[r];
-                        r--;
-                    }
-                    numbersFinal[1] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersFinal[2]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 2) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersFinal[r + 1] = numbersFinal[r];
-                        r--;
-                    }
-                    numbersFinal[2] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                } else if (barNumbers[currentRun] <= numbersFinal[3]) {// Is the number currently been examined less than the first position in the optimisation array?
-                    while (r >= 3) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
-                        numbersFinal[r + 1] = numbersFinal[r];
-                        r--;
-                    }
-                    numbersFinal[3] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
-                }
-            }
-            return (numbersFinal);
 
+        //For scenario 2 output should be 0,3,4,5,10
+        int[] numbersFinal = {10, 10, 10, 10, 10};
+        for (int currentRun = numberOfThrees - 1; currentRun != -1; currentRun--) {
+            byte r = 3;
+            if (barNumbers[currentRun] <= numbersFinal[0]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 0) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
+                    numbersFinal[r + 1] = numbersFinal[r];
+                    r--;
+                }
+                numbersFinal[0] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
+            } else if (barNumbers[currentRun] <= numbersFinal[1]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 1) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
+                    numbersFinal[r + 1] = numbersFinal[r];
+                    r--;
+                }
+                numbersFinal[1] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
+            } else if (barNumbers[currentRun] <= numbersFinal[2]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 2) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
+                    numbersFinal[r + 1] = numbersFinal[r];
+                    r--;
+                }
+                numbersFinal[2] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
+            } else if (barNumbers[currentRun] <= numbersFinal[3]) {// Is the number currently been examined less than the first position in the optimisation array?
+                while (r >= 3) { // If it is, move all numbers after it down an array index. Do the same to the barNumbers array
+                    numbersFinal[r + 1] = numbersFinal[r];
+                    r--;
+                }
+                numbersFinal[3] = barNumbers[currentRun]; // Record the Bar associated with this optimisation value.
+            }
         }
+        return (numbersFinal);
+
     }
 
     public int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int BarOneHeight, int BarTwoHeight) { //todo-  Add comments for this area.
         int maximumHeight = 0;
-        while (5 >= leftBar - 3) { //Convert a coordinate system to a bar number system -  move from 1-8 to 0-5, then run through all bars
-            if (leftBar >= 3) { //If our bar is
+        while (5 >= leftBar - 3) {
+            if (leftBar >= 3) {
                 if (barHeights[leftBar - 3] >= maximumHeight) {
                     maximumHeight = barHeights[leftBar - 3];
                 }
@@ -534,7 +436,7 @@ class RobotControl {
 
     public int notThreesStackCounter(int blockHeights[], int CurrentBlock) {
         int result = 0;
-        for (int blockRuns = 0; blockRuns != (blockHeights.length - (CurrentBlock)); blockRuns++) { //Run this
+        for (int blockRuns = 0; blockRuns != (blockHeights.length - (CurrentBlock)); blockRuns++) {
             if (blockHeights[blockRuns] == 1 || blockHeights[blockRuns] == 2) {
                 result++;
             }
@@ -543,5 +445,7 @@ class RobotControl {
     }
 
 }
+
+
 
 
