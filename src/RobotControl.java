@@ -12,12 +12,15 @@ class RobotControl {
     }
 
     //A level of 0 means no bar height optimisation is not run.
-    //A level of 1 means imperfect, but nonetheless effective optimisation is run
+    //A level of 1 means imperfect, but nonetheless effective optimisation is run. It will not pick up many potential optimisations, but ones with large numbers of moves to be saved should be found. - e.g
+    // 122347 1111111113 vs 122347 311111111
+    //In situation 1, the 3 is the first block as all the one high bars pass over it, it should be places on the 4 high bar.
+    //In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
     //A level of 2 means perfect optimisation runs. NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
     final int OPTIMISATION_LEVEL = 1;
-
+    final int SUPER_SPEED = 2; //Set the speed up value - values larger the 20 may cause random errors.
     public void control(int barHeights[], int blockHeights[]) {
-        r.speedUp(2);//For testing large numbers of iterations.
+        r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
         controlMechanismOptimisedC(barHeights, blockHeights);
     }
 
@@ -266,7 +269,7 @@ class RobotControl {
         if (lastThreeHeight < barHeights[5]) {
             optimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
         } else
-            optimisationBars[5] = (lastThreeHeight - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+            optimisationBars[5] = (7 - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
         boolean threesBefore = false;
         if (firstThree > firstOne || firstThree > firstTwo) {
             threesBefore = true;
@@ -299,7 +302,7 @@ class RobotControl {
                         if (lastThreeHeight < barHeights[5]) { //As this bar won't have to go up and over something, and then back down, we are fine as long as the final bar that is three high is also lower than the bar. If it is higher, we need to take number of moves down into account, and it may be regarded as lower.
                             optimisationBars[barRuns] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last. Check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
                         } else
-                            optimisationBars[barRuns] = (lastThreeHeight - barNumbers[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+                            optimisationBars[barRuns] = (7 - barNumbers[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
                     }
                 }
                 //Then multiply the amount that the stacked bar will protrude over the previous maximum height by the not threes counter.
