@@ -1,7 +1,3 @@
-import jdk.nashorn.internal.ir.Block;
-
-import java.util.Stack;
-
 /*
  * Copyright (c) 2016.
  * kin0025 aka Alexander Kinross-Smith
@@ -21,7 +17,7 @@ class RobotControl {
     final int OPTIMISATION_LEVEL = 1;
 
     public void control(int barHeights[], int blockHeights[]) {
-        r.speedUp(20);//For testing large numbers of iterations.
+        r.speedUp(2);//For testing large numbers of iterations.
         controlMechanismOptimisedC(barHeights, blockHeights);
     }
 
@@ -231,19 +227,14 @@ class RobotControl {
     public int[] optimisePathing(int barHeights[], int numberOfThrees, int MaxHeight, int blockHeights[]) {
         int[] barNumbers = {0, 0, 0, 0, 0, 0, 0};
         int[] optimisationBars = {0, 0, 0, 0, 0, 0, 0};
-        int[] optimisation = {21, 22, 23, 24, 25, 26, 27};
         int firstTwo = 100;
         int firstOne = 100;
         int firstThree = 100;
         int lastThreeHeight = 0;
-        int lastThree = 0;
+        int lastThree = 13;
         for (int barRuns = 0; barRuns <= 4; barRuns++) {//Set optimisation values for movements.
             optimisationBars[barRuns] = (7 - barHeights[barRuns]) + (6 - barRuns); //This should give {9,11,9,7,3,7}
         }
-        if (lastThreeHeight < barHeights[5]) {
-            optimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
-        } else
-            optimisationBars[5] = (lastThreeHeight - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
         for (int blockRuns = blockHeights.length; blockRuns != 0; blockRuns--) {
             if (blockHeights[blockRuns - 1] == 2 && firstTwo == 100) { //If current block is equal to 2 and firstTwo has not been changed since declaration, the current block must be the fist one that is two high.
                 firstTwo = blockRuns - 1;
@@ -265,13 +256,17 @@ class RobotControl {
             firstThree = 0;
         }
         for (int blockRuns = 0; blockRuns != blockHeights.length; blockRuns++) {
-            if (lastThree == 0) {
+            if (lastThree == 13) {
                 lastThreeHeight += blockHeights[blockRuns];
             }
-            if (blockHeights[blockRuns] == 3 && lastThree == 0) {
+            if (blockHeights[blockRuns] == 3 && lastThree == 13) {
                 lastThree = blockRuns;
             }
         }
+        if (lastThreeHeight < barHeights[5]) {
+            optimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
+        } else
+            optimisationBars[5] = (lastThreeHeight - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
         boolean threesBefore = false;
         if (firstThree > firstOne || firstThree > firstTwo) {
             threesBefore = true;
@@ -292,27 +287,35 @@ class RobotControl {
 
 //This is an imperfect solution, but is adequate.
         if (OPTIMISATION_LEVEL == 1) {
-            int[] numbersPrelim;
             //Rerun the optimisation values on our bars again.
             for (int barRun = blockHeights.length; barRun >= 0; barRun--) {    //Iterate over this 3 times to get a rough approximation of bar ordering and any affect modified optimisation values from adding max height on will bring.
-                numbersPrelim = optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees, true); //We get our old output - an ordered array of what bars to place on.
+                barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, true); //We get our old output - an ordered array of what bars to place on.
                 //We need to take that list, re-run our optimisation bars algorithm to get the ordered result.
                 for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for movements.
-                    optimisationBars[barRuns] = (7 - barHeights[numbersPrelim[barRuns]]) + (6 - numbersPrelim[barRuns]);
+                    optimisationBars[barRuns] = (7 - barHeights[barNumbers[barRuns]]) + (6 - barNumbers[barRuns]);
                 }
                 for (int barRuns = 0; barRuns <= 5; barRuns++) { //Find the part of numbers final that equals 5, and rerun the equation from before.
-                    if (numbersPrelim[barRuns] == 5) {
+                    if (barNumbers[barRuns] == 5) {
                         if (lastThreeHeight < barHeights[5]) { //As this bar won't have to go up and over something, and then back down, we are fine as long as the final bar that is three high is also lower than the bar. If it is higher, we need to take number of moves down into account, and it may be regarded as lower.
                             optimisationBars[barRuns] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last. Check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
                         } else
-                            optimisationBars[barRuns] = (lastThreeHeight - numbersPrelim[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+                            optimisationBars[barRuns] = (lastThreeHeight - barNumbers[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
                     }
                 }
                 //Then multiply the amount that the stacked bar will protrude over the previous maximum height by the not threes counter.
                 if (threesBefore) {//Only run this if there are one or two high blocks below a three high one
+                    int[] blockThreesIndex = new int[numberOfThrees];
+                    int counter = 0;
+                    //Set the block indexes of all 3 high blocks into an array- if we have 3 high blocks in positions 1,3,4 we will get an array like {0,2,3}
+                    for (int blockRuns = 0; blockRuns != blockHeights.length; blockRuns++) {
+                        if (blockHeights[blockRuns] == 3) {
+                            blockThreesIndex[counter] = blockRuns;
+                            counter++;
+                        }
+                    }
                     for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for height added above max.
                         int optimisationAdd;
-                        optimisationAdd = (barHeights[numbersPrelim[barRuns]] + 3) - MaxHeight; //How many units will the block stick up over the maximum bar height?
+                        optimisationAdd = (barHeights[barNumbers[barRuns]] + 3) - MaxHeight; //How many units will the block stick up over the maximum bar height?
                         if (optimisationAdd < 0) { //If it doesn't stick up, we don't want to call a negative number. Instead, set it to zero.
                             optimisationAdd = 0;
                         }
@@ -320,15 +323,7 @@ class RobotControl {
                         if (barRuns >= numberOfThrees) { //We may have situations where there are more bars than there are blocks. We don't want to try to call too large an index, so set the value to maximum array amount.
                             barPotential = numberOfThrees - 1;//Subtract one to get a zero array index.
                         } else barPotential = barRuns;
-                        int[] blockThreesIndex = new int[numberOfThrees];
-                        int counter = 0;
-                        //Set the block indexes of all 3 high blocks into an array- if we have 3 high blocks in positions 1,3,4 we will get an array like {0,2,3}
-                        for (int blockRuns = 0; blockRuns != blockHeights.length; blockRuns++) {
-                            if (blockHeights[blockRuns] == 3) {
-                                blockThreesIndex[counter] = blockRuns;
-                                counter++;
-                            }
-                        }
+
                         //Set the maximum height to the new maximum if it is greater than the previous - we don't need to count more height if something is already that high.
                         if (MaxHeight < barHeights[barRuns] + 3) {
                             MaxHeight = barHeights[barRuns] + 3;
@@ -340,11 +335,10 @@ class RobotControl {
                     }
 
                 }
-                barNumbers = numbersPrelim;
             }
             //End it here
         }
-        barNumbers = optimisationOrder(optimisationBars, optimisation, barNumbers, numberOfThrees, false);//Return the final ordered array.
+        barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, false);//Return the final ordered array.
         int[] numbersFinal = {10, 10, 10, 10, 10};
         for (int currentRun = numberOfThrees - 1; currentRun != -1; currentRun--) {
             byte r = 3;
@@ -377,7 +371,8 @@ class RobotControl {
         return (numbersFinal);//For run one should be {2,3,4,5} for run 7 should be {2,4}
     }
 
-    public int[] optimisationOrder(int[] optimisationBars, int[] optimisation, int[] barNumbers, int numberOfThrees, boolean heightcalc) {
+    public int[] optimisationOrder(int[] optimisationBars, int[] barNumbers, int numberOfThrees, boolean heightcalc) {
+        int[] optimisation = {21, 22, 23, 24, 25, 26, 27};
         for (int barRuns = 0; barRuns <= 5; barRuns++) {
             byte r = 5;
             // Check the current number against all positions in optimisation.
