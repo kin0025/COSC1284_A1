@@ -17,15 +17,16 @@ class RobotControl {
     //In situation 1, the 3 is the first block as all the one high bars pass over it, it should be places on the 4 high bar.
     //In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
     //A level of 2 means perfect optimisation runs. NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
-    final int OPTIMISATION_LEVEL = 1;
-    final int SUPER_SPEED = 20; //Set the speed up value - values larger the 20 may cause random errors.
+    private final int OPTIMISATION_LEVEL = 1;
+    private final int SUPER_SPEED = 20; //Set the speed up value - values larger the 20 may cause random errors.
 
     public void control(int barHeights[], int blockHeights[]) {
         r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
         controlMechanismOptimisedC(barHeights, blockHeights);
+
     }
 
-    public void controlMechanismOptimisedC(int barHeights[], int blockHeights[]) {
+    private void controlMechanismOptimisedC(int barHeights[], int blockHeights[]) {
         //Setting cranes initial position as variables
         int[] position;
         position = new int[3];
@@ -156,7 +157,7 @@ class RobotControl {
         }
     }
 
-    public int[] optimisePathing(int barHeights[], int numberOfThrees, int MaxHeight, int blockHeights[]) {
+    private int[] optimisePathing(int barHeights[], int numberOfThrees, int MaxHeight, int blockHeights[]) {
         int[] barNumbers = {0, 0, 0, 0, 0, 0, 0};
         int[] optimisationBars = {0, 0, 0, 0, 0, 0, 0};
         int firstTwo = 100;
@@ -277,7 +278,7 @@ class RobotControl {
         return (barNumbers);//For run one should be {2,3,4,5} for run 7 should be {2,4}
     }
 
-    public int[] optimisationOrder(int[] optimisationBars, int[] barNumbers, int numberOfThrees, boolean heightCalc) {
+    private int[] optimisationOrder(int[] optimisationBars, int[] barNumbers, int numberOfThrees, boolean heightCalc) {
         int[] optimisation = {21, 22, 23, 24, 25, 26, 27};
         for (int barRuns = 0; barRuns <= 5; barRuns++) {
             byte r = 5;
@@ -411,7 +412,7 @@ class RobotControl {
         }
     }
 
-    public int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int BarOneHeight, int BarTwoHeight) { //Find the maximum height between two points.
+    private int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int BarOneHeight, int BarTwoHeight) { //Find the maximum height between two points.
         int maximumHeight = 0;
         while (5 >= leftBar - 3) { //Convert a coordinate system to a bar number system -  move from 1-8 to 0-5, then run through all bars. leftBar has already been set, so use a while loop
             //If our bar is not one of the first two check the bar heights array. If the current bar is higher than previous maximum, set its height as current maximum.
@@ -436,7 +437,7 @@ class RobotControl {
         return (maximumHeight);
     }
 
-    public int notThreesStackCounter(int blockHeights[], int CurrentBlock) {
+    private int notThreesStackCounter(int blockHeights[], int CurrentBlock) {
         int result = 0;
         //Run this up our blocks array up to the current block.
         for (int blockRuns = 0; blockRuns != (blockHeights.length - (CurrentBlock)); blockRuns++) {
@@ -450,7 +451,7 @@ class RobotControl {
 
     //A listing of movement methods.
 
-    public int moveVerticalTo(int moveTo, int position) { //We get the position to move to and the current position passed to us
+    private int moveVerticalTo(int moveTo, int position) { //We get the position to move to and the current position passed to us
         while (position != moveTo) { //when we have not moved to the correct position proceed
             if (moveTo < 15 && moveTo > 0) { //Sanity checking to prevent moving to outside boundaries
 
@@ -471,7 +472,7 @@ class RobotControl {
         return (position);
     }
 
-    public int moveHorizontalTo(int moveTo, int position) {
+    private int moveHorizontalTo(int moveTo, int position) {
         while (position != moveTo) {
             if (moveTo < 11 && moveTo > 0) { //More input sanitizing
 
@@ -492,7 +493,7 @@ class RobotControl {
         return (position); //Return our position so that it stays up to date
     }
 
-    public int[] moveCraneToPosition(int moveTo, int[] position) {
+    private int[] moveCraneToPosition(int moveTo, int[] position) {
         moveTo++;
         int verticalPosition = position[0] - position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
         while (verticalPosition != moveTo) {
