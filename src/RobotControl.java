@@ -236,7 +236,7 @@ class RobotControl {
         int lastThreeHeight = 0;
         int lastThree = 13;
         for (int barRuns = 0; barRuns <= 4; barRuns++) {//Set optimisation values for movements.
-            optimisationBars[barRuns] = (7 - barHeights[barRuns]) + (6 - barRuns); //This should give {9,11,9,7,3,7}
+            optimisationBars[barRuns] = (checkMaxPathingHeightToBars(barHeights, barRuns + 3, 0, 0) - barHeights[barRuns]) + (6 - barRuns); //This should give {9,11,9,7,3,7}
         }
         for (int blockRuns = blockHeights.length; blockRuns != 0; blockRuns--) {
             if (blockHeights[blockRuns - 1] == 2 && firstTwo == 100) { //If current block is equal to 2 and firstTwo has not been changed since declaration, the current block must be the fist one that is two high.
@@ -269,7 +269,7 @@ class RobotControl {
         if (lastThreeHeight < barHeights[5]) {
             optimisationBars[5] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last.check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
         } else
-            optimisationBars[5] = (7 - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+            optimisationBars[5] = (checkMaxPathingHeightToBars(barHeights, 8, 0, 0) - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
         boolean threesBefore = false;
         if (firstThree > firstOne || firstThree > firstTwo) {
             threesBefore = true;
@@ -295,14 +295,14 @@ class RobotControl {
                 barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, true); //We get our old output - an ordered array of what bars to place on.
                 //We need to take that list, re-run our optimisation bars algorithm to get the ordered result.
                 for (int barRuns = 0; barRuns <= 5; barRuns++) {//Set optimisation values for movements.
-                    optimisationBars[barRuns] = (7 - barHeights[barNumbers[barRuns]]) + (6 - barNumbers[barRuns]);
+                    optimisationBars[barRuns] = (checkMaxPathingHeightToBars(barHeights, barNumbers[barRuns] + 3, 0, 0) - barHeights[barNumbers[barRuns]]) + (6 - barNumbers[barRuns]);
                 }
                 for (int barRuns = 0; barRuns <= 5; barRuns++) { //Find the part of numbers final that equals 5, and rerun the equation from before.
                     if (barNumbers[barRuns] == 5) {
                         if (lastThreeHeight < barHeights[5]) { //As this bar won't have to go up and over something, and then back down, we are fine as long as the final bar that is three high is also lower than the bar. If it is higher, we need to take number of moves down into account, and it may be regarded as lower.
                             optimisationBars[barRuns] = 1; //Not a perfect solution. If our only 3 bar is high up, this is not the most efficient solution, however in many cases it is, as it is called last. Check to find height of last 3 high block. If it is < or equal to height of bar, then height is not  a move factor consideration. Else, treat as normally would.
                         } else
-                            optimisationBars[barRuns] = (7 - barNumbers[barRuns]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
+                            optimisationBars[barRuns] = (checkMaxPathingHeightToBars(barHeights, 8, 0, 0) - barHeights[5]) + 1; //As stack is depleted by the time last 3 is reached, use a reduced move height for calculations
                     }
                 }
                 //Then multiply the amount that the stacked bar will protrude over the previous maximum height by the not threes counter.
