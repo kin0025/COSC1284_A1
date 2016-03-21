@@ -11,12 +11,27 @@ class RobotControl {
         this.r = r;
     }
 
-    //A level of 0 means no bar height optimisation is not run.
-    //A level of 1 means imperfect, but nonetheless effective optimisation is run. It will not pick up many potential optimisations, but ones with large numbers of moves to be saved should be found. - e.g
-    // 122347 1111111113 vs 122347 311111111
-    //In situation 1, the 3 is the first block as all the one high bars pass over it, it should be places on the 4 high bar.
-    //In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
-    //A level of 2 means perfect optimisation runs. NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
+    /*
+    *************LEVEL 0*****************************
+    * Only basic position optimisation is performed. Works effectively and perfectly for part B, but does not work perfectly on Part C.
+
+    ************LEVEL 1******************************
+    * Imperfect, but nonetheless effective optimisation is run. It will not pick up all potential optimisations, but ones with large numbers of moves to be saved should be found.
+    * E.g 122347 1111111113 vs 122347 311111111
+    * In situation 1, the 3 is the first block as all the one high bars pass over it, it should be places on the 4 high bar.
+    * In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
+
+    **********LEVEL 2*******************************
+    * WARNING WORK IN PROGRESS
+    * Blocks will be placed out of order in optimal positions if it can be determined that they will not impede the path of other blocks. If they are found to impede the path of other
+    * three high blocks they will not be placed out of order.
+    *
+
+    **********LEVEL 3******************************
+    * NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
+    * Perfect optimisation runs.
+    * All permutations fully simulated beforehand.
+    */
     private final int OPTIMISATION_LEVEL = 1;
     private final int SUPER_SPEED = 20; //Set the speed up value - values larger the 20 may cause random errors.
 
@@ -223,7 +238,7 @@ class RobotControl {
             threesBefore = true;
         }
 //Only run this if higher level optimisation is enabled.
-        if (OPTIMISATION_LEVEL == 1 && threesBefore) {
+        if (OPTIMISATION_LEVEL >= 1 && threesBefore) {
             //Rerun the optimisation values on our bars again.
             for (int barRun = blockHeights.length; barRun >= 0; barRun--) {    //Iterate over this 3 times to get a rough approximation of bar ordering and any affect modified optimisation values from adding max height on will bring.
                 barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, true); //We get our old output - an ordered array of what bars to place on.
@@ -275,10 +290,13 @@ class RobotControl {
 
         barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, false);//Return the final ordered array.
 //todo- if the last bar does not block the path of another block place it first.
+        if (OPTIMISATION_LEVEL >= 2) {
+
+        }
         return (barNumbers);//For run one should be {2,3,4,5} for run 7 should be {2,4}
     }
 
-    private int[] optimisationOrder(int[] optimisationBars, int[] barNumbers, int numberOfThrees, boolean heightCalc) {
+    private int[] optimisationOrder(int[] optimisationBars, int[] barNumbers, int numberOfThrees, boolean heightCalc) { // TODO: 21/03/2016 Add comments and simplify this area. - can loops be used more effectively?
         int[] optimisation = {21, 22, 23, 24, 25, 26, 27};
         for (int barRuns = 0; barRuns <= 5; barRuns++) {
             byte r = 5;
@@ -442,8 +460,10 @@ class RobotControl {
         //Run this up our blocks array up to the current block.
         for (int blockRuns = 0; blockRuns != (blockHeights.length - (CurrentBlock)); blockRuns++) {
             //If the current block is a 1 or a 2, it has to path over the threes above it. Increment the number of blocks that aren't a three below the block been examined.
-            if (blockHeights[blockRuns] == 1 || blockHeights[blockRuns] == 2) {
+            if (blockHeights[blockRuns] == 1) {
                 result++;
+            } else if (blockHeights[blockRuns] == 2) {
+                result += 2;
             }
         }
         return (result);
