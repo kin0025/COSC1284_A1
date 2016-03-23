@@ -25,7 +25,7 @@ class RobotControl {
     * WARNING WORK IN PROGRESS
     * Blocks will be placed out of order in optimal positions if it can be determined that they will not impede the path of other blocks. If they are found to impede the path of other
     * three high blocks they will not be placed out of order.
-    *
+    * This algorithm will change the order that blocks will be placed in after they have been chosen.
 
     **********LEVEL 3******************************
     * NOT IMPLEMENTED. INCREDIBLY COMPUTATIONALLY EXPENSIVE
@@ -33,7 +33,7 @@ class RobotControl {
     * All permutations fully simulated beforehand.
     */
     private final int OPTIMISATION_LEVEL = 2;
-    private final int SUPER_SPEED = 20; //Set the speed up value - values larger the 20 may cause random errors.
+    private final int SUPER_SPEED = 30; //Set the speed up value - values larger the 20 may cause random errors.
 
     public void control(int barHeights[], int blockHeights[]) {
         r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
@@ -49,18 +49,18 @@ class RobotControl {
         position[1] = 1;         // Initial width of arm 2
         position[2] = 0;         // Initial drop of arm 3
         int numberOfBlocks = blockHeights.length; //How many blocks need to be moved.
-        int maxHeight = 0;
-        int stackHeight = 0;
-        int maxBlockSize = 0;
-        int firstTwo = 100;
-        int firstOne = 100;
-        int firstThree = 100;
-        int numberOfThreeBlocks = 0;
-        int maxStackedHeight = 0;
-        int topBlockNumber = blockHeights.length;
-        int BarOneHeight = 0; //Initialising outside of loop as we don't want these set to zero again.
-        int BarTwoHeight = 0;
-        int BarThreesPosition = 0; //This is used to keep track of what bar we are working on - refers to array index of barOptimised
+        int maxHeight = 0; //Maximum height of bars or stack.
+        int stackHeight = 0; //Height of stacked blocks.
+        int maxBlockSize = 0; //Maximum size of blocks. Used to determine if code is necessary
+        int firstOne = 100; //Position of first one high block
+        int firstTwo = 100; //Position of first two high block
+        int firstThree = 100; //Position of first three high block in stack
+        int numberOfThreeBlocks = 0; //Number of blocks to be placed on bars
+        int maxStackedHeight = 0; //Expected maximum height
+        int topBlockNumber = blockHeights.length - 1; //Array index of the current top block
+        int barOneHeight = 0; //Height of the first bar - where the one high blocks are placed
+        int barTwoHeight = 0; //Height of the second bar - where the two high blocks are placed
+        int barThreesPosition = 0; //This is used to keep track of what bar we are working on - refers to array index of barOptimised
         // Count the number of blocks that need to be put on bars
         for (int blockRuns = blockHeights.length; blockRuns > 0; blockRuns--) {//A loop that runs code for analysing the blocks. Run the loop for as many times as there are blocks.
             stackHeight += blockHeights[blockRuns - 1];// Add the current block onto the running total
@@ -85,89 +85,90 @@ class RobotControl {
         for (int barRuns = 6; barRuns != 0; barRuns--) {
             if (maxHeight < barHeights[barRuns - 1]) { //Is the bar been examined larger than all bars previously?
                 maxHeight = barHeights[barRuns - 1];// If it is, it is now that largest bar.
-            }
-        }
+            }//End if
+        }//End for
 
         //Initialise a variable
         int[] barOptimised;
-        barOptimised = new int[7];
-
-        if (numberOfThreeBlocks >= 1) { //We only need to optimise for Bars if there are blocks to be placed on them.
-            barOptimised = optimisePathing(barHeights, numberOfThreeBlocks, maxHeight, blockHeights); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
-        }
-        /*barOptimised[0]= 2;
-        barOptimised[1]= 4;*/
+        barOptimised = new int[numberOfThreeBlocks + 1];
         //Finding the maximum height that the blocks will reach when placed on bars
         //Height of all one and two high blocks is not needed, as stackHeight will always be larger.
-        if (maxBlockSize == 3) {
-            int x = numberOfThreeBlocks;
-            while (x != 0) { //Setting the maximum height blocks will take up.
+        if (maxBlockSize == 3) {//We only need to optimise for Bars if there are blocks to be placed on them.
+            barOptimised = optimisePathing(barHeights, numberOfThreeBlocks, maxHeight, blockHeights); //Find more efficient ways of placing blocks on bars, and return an array that contains them in ascending order (Generalisation for most efficient)
+            for (int x = numberOfThreeBlocks; x != 0; x--) { //Setting the maximum height blocks will take up.
                 if (maxStackedHeight < barHeights[barOptimised[x - 1]] + 3) {
                     maxStackedHeight = barHeights[barOptimised[x - 1]] + 3;
-                }
-                x--;
-            }//End while
+                }//End if
+            }//End for
         }//End if
+
         if (maxHeight < maxStackedHeight) { //Finding maximum expected height.
             maxHeight = maxStackedHeight;
         }//End if
+
         if (maxHeight >= stackHeight + 1) { //Move to the highest expected point.
             position[0] = moveVerticalTo(maxHeight + 1, position[0]);
         } else position[0] = moveVerticalTo(stackHeight + 1, position[0]);
-
-        //Initialise and declare for the movement loop
-        while (numberOfBlocks != 0) { //Doing the actual movement
-            int CurrentBlock = blockHeights[topBlockNumber - 1];
+        /*****************MOVEMENT LOOP ********************/
+        while (numberOfBlocks != 0) {
+            int currentBlock = blockHeights[topBlockNumber];
             topBlockNumber--;
             //Move to the stack
             position[1] = moveHorizontalTo(10, position[1]);
             //Drop to the top position of the stack
             position = moveCraneToPosition(stackHeight, position);
             r.pick();
+            //We have removed a block, recalculate stack height
+            stackHeight -= currentBlock;
+            //Move to the stack for free vertical movement
             position[1] = moveHorizontalTo(9, position[1]);
-            stackHeight = stackHeight - CurrentBlock;
             int MoveTo;
             int currentBarHeight;
-            switch (CurrentBlock) {
+            //Pick what to do based on the block been placed.
+            switch (currentBlock) {
                 case 1:
-                    MoveTo = 1;
-                    currentBarHeight = BarOneHeight;
+                    MoveTo = 1; //If the block is one high, place it on the first bar.
+                    currentBarHeight = barOneHeight; //Set our vertical height to that of the first bar.
                     break;
                 case 2:
-                    MoveTo = 2;
-                    currentBarHeight = BarTwoHeight;
+                    MoveTo = 2; //If the block is two high, place it on the second bar.
+                    currentBarHeight = barTwoHeight;//Set our vertical height to that of the second bar.
                     break;
 
                 case 3:
-                    MoveTo = barOptimised[BarThreesPosition] + 3;
-                    currentBarHeight = barHeights[barOptimised[BarThreesPosition]];
+                    MoveTo = barOptimised[barThreesPosition] + 3; //If the block is three high, place it on the bar calculated by the optimisation algorithm for our current block.
+                    currentBarHeight = barHeights[barOptimised[barThreesPosition]]; //Set the height to that of the bar chosen
                     break;
                 default:
-                    MoveTo = barOptimised[BarThreesPosition] + 3;
-                    currentBarHeight = barHeights[barOptimised[BarThreesPosition]];
+                    MoveTo = barOptimised[barThreesPosition] + 3; //Should never be called. Same as condition 3
+                    currentBarHeight = barHeights[barOptimised[barThreesPosition]];
                     break;
 
             }
-            int MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-            position = moveCraneToPosition(MinMoveHeight + CurrentBlock /* To take bar height + crane height into account */, position);
+            //Calculating the minimum height we can move to get to the chosen position
+            int minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
+            //Move to our vertical position to prepare for horizontal movement.
+            position = moveCraneToPosition(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
+            //Move horizontally to our target
             position[1] = moveHorizontalTo(MoveTo, position[1]);
-            position = moveCraneToPosition(currentBarHeight + CurrentBlock, position);
+            //Drop to the top of the chosen bar
+            position = moveCraneToPosition(currentBarHeight + currentBlock, position);
             r.drop();
-            if (CurrentBlock == 3) {
-                barHeights[barOptimised[BarThreesPosition]] = barHeights[barOptimised[BarThreesPosition]] + 3;
-                BarThreesPosition++;
-            } else if (CurrentBlock == 1) {
-                BarOneHeight++;
+            if (currentBlock == 3) {
+                barHeights[barOptimised[barThreesPosition]] += 3; //Ensure heights remain up to date for pathing.
+                barThreesPosition++;
+            } else if (currentBlock == 1) {
+                barOneHeight++;
             } else {
-                BarTwoHeight = BarTwoHeight + 2;
+                barTwoHeight += 2;
             }
             numberOfBlocks--;
-            if (numberOfBlocks > 0) {
-                MinMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, BarOneHeight, BarTwoHeight);
-                if (stackHeight + 1 > MinMoveHeight) {
-                    position = moveCraneToPosition(stackHeight, position);
-                } else
-                    position = moveCraneToPosition(MinMoveHeight, position); //replaces some other logic
+            if (numberOfBlocks > 0) { //If we still have blocks to move move back to the stack.
+                minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
+                if (stackHeight > minMoveHeight) { //If the stack height is larger than our calculated minimum, vertical move to stack height
+                    position = moveCraneToPosition(stackHeight, position); //Move to the top of the stack
+                } else //Otherwise, as minMoveHeight is larger, move to that vertical position.
+                    position = moveCraneToPosition(minMoveHeight, position); //Move to the min move height.
             }
         }
     }
@@ -266,6 +267,19 @@ class RobotControl {
         if (OPTIMISATION_LEVEL >= 2) {
 //We have our bars that we are going to place. Now we need to find the most efficient order in which to place them.
 
+
+            //Solution: Calculate maxpathing height between stack and the target.
+            //Calculate max height of all optimisation values
+            //If pathing height + 3
+
+
+            //
+
+            //Assign them with optimisation values again.
+
+            //If a bar + block is lower than maximum pathing height -> from stack to furthest block position
+
+            //Order changing algorithm.
         }
 
         //We should end with optimisation values of {7,5,5,3,3,2} without the add bars
@@ -277,14 +291,14 @@ class RobotControl {
         //I think that to accurately find the shortest path with the least moves, there is no shortcut. We need to generate optimisation values for every possible configuration (treating configurations as a single entity), and find the smallest one. This will be incredibly computationally expensive ( think ^3 +), so a toggle may need to be implemented.
         //Run through the entire blocks array to get the positions of the three high bars.
 
-        if (OPTIMISATION_LEVEL >= 3) {
+        /*if (OPTIMISATION_LEVEL >= 3) {
             long counter = 0;
             while (true) {
                 counter++;
                 System.out.println("THIS FEATURE IS NOT IMPLEMENTED. HOWEVER TO SIMULATE ITS PROCESSING EFFECT, THERE IS A NEVER ENDING LOOP HERE INSTEAD.");
                 System.out.println("RUN:" + counter);
             }
-        }
+        }*/
         return (barNumbers);//For run one should be {2,3,4,5} for run 7 should be {2,4}
     }
 
