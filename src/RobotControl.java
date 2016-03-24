@@ -265,16 +265,23 @@ class RobotControl {
         barNumbers = optimisationOrder(optimisationBars, barNumbers, numberOfThrees, false);//Return the final ordered array.
 //todo- if the last bar does not block the path of another block place it first.
         if (OPTIMISATION_LEVEL >= 2) {
-//We have our bars that we are going to place. Now we need to find the most efficient order in which to place them.
+/* We have our bars that we are going to place. Now we need to find the most efficient order in which to place them. */
+            int[] optimisationHeights = new int[barNumbers.length];
+            for (int x = barNumbers.length; x >= 0; x--) {
+                optimisationHeights[x] = checkMaxPathingHeightToBars(barHeights, barNumbers[x], 0, 0);
+            }
 
 
             //Solution: Calculate maxpathing height between stack and the target.
             //Calculate max height of all optimisation values
             //If pathing height + 3
-
-
-            //
-
+/*
+            Lets work through some examples (like part B)
+            For 776332 3333 - Our output would be {6,7,8,5} / {3,4,5,2}
+            For 676623 3333 - Our output would be {7,8,5,6} / {4,5,2,3}
+            For 137561 3333 - Our output would be {8,5,6,7} / {5,2,3,4}
+            For 734561 231231 - Our output would be {8,7} / {5,4}
+*/
             //Assign them with optimisation values again.
 
             //If a bar + block is lower than maximum pathing height -> from stack to furthest block position
@@ -455,7 +462,7 @@ class RobotControl {
         }
     }
 
-    private int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int BarOneHeight, int BarTwoHeight) { //Find the maximum height between two points.
+    private int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int barOneHeight, int barTwoHeight) { //Find the maximum height between two points.
         int maximumHeight = 0;
         while (5 >= leftBar - 3) { //Convert a coordinate system to a bar number system -  move from 1-8 to 0-5, then run through all bars. leftBar has already been set, so use a while loop
             //If our bar is not one of the first two check the bar heights array. If the current bar is higher than previous maximum, set its height as current maximum.
@@ -463,13 +470,13 @@ class RobotControl {
                 maximumHeight = barHeights[leftBar - 3];
             }
             //if the current bar is the first position, check the maximum height against it and set it if greater.
-            else if (leftBar == 1 && BarOneHeight >= maximumHeight) {
-                maximumHeight = BarOneHeight;
+            else if (leftBar == 1 && barOneHeight >= maximumHeight) {
+                maximumHeight = barOneHeight;
 
                 //Same as first bar, but for the second bar.
-            } else if (leftBar == 2 && BarTwoHeight >= maximumHeight) {
+            } else if (leftBar == 2 && barTwoHeight >= maximumHeight) {
 
-                maximumHeight = BarTwoHeight;
+                maximumHeight = barTwoHeight;
 
             }
 
@@ -480,10 +487,10 @@ class RobotControl {
         return (maximumHeight);
     }
 
-    private int notThreesStackCounter(int blockHeights[], int CurrentBlock) {
+    private int notThreesStackCounter(int blockHeights[], int currentBlock) {
         int result = 0;
         //Run this up our blocks array up to the current block.
-        for (int blockRuns = 0; blockRuns != (blockHeights.length - (CurrentBlock)); blockRuns++) {
+        for (int blockRuns = 0; blockRuns != (blockHeights.length - (currentBlock)); blockRuns++) {
             //If the current block is a 1 or a 2, it has to path over the threes above it. Increment the number of blocks that aren't a three below the block been examined.
             if (blockHeights[blockRuns] == 1) {
                 result++;
