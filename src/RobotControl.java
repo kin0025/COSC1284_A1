@@ -65,17 +65,23 @@ class RobotControl {
         while (numberOfBlocks != 0) {
             int currentBlock = blockHeights[topBlockNumber];
             topBlockNumber--;
+
             //Move to the stack
             position[1] = moveHorizontalTo(10, position[1]);
+
             //Drop to the top position of the stack
             position = moveCraneToPosition(stackHeight, position);
             r.pick();
+
             //We have removed a block, recalculate stack height
             stackHeight -= currentBlock;
+
             //Move to the stack for free vertical movement
             position[1] = moveHorizontalTo(9, position[1]);
+
             int MoveTo;
             int currentBarHeight;
+
             //Pick what to do based on the block been placed.
             switch (currentBlock) {
                 case 1:
@@ -99,13 +105,17 @@ class RobotControl {
             }
             //Calculating the minimum height we can move to get to the chosen position
             int minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
+
             //Move to our vertical position to prepare for horizontal movement.
             position = moveCraneToPosition(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
+
             //Move horizontally to our target
             position[1] = moveHorizontalTo(MoveTo, position[1]);
+
             //Drop to the top of the chosen bar
             position = moveCraneToPosition(currentBarHeight + currentBlock, position);
             r.drop();
+
             //Set the bar position to move the stack to based on the current block
             switch (currentBlock) {
                 case 3:
