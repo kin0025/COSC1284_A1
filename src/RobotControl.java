@@ -25,10 +25,10 @@ class RobotControl {
     * In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
     */
     private final int OPTIMISATION_LEVEL = -1;
-    private final int SUPER_SPEED = 20; //Set the speed up value - values larger the 20 may cause random errors.
+    private final int SUPER_SPEED = 1; //Set the speed up value - values larger the 20 may cause random errors.
 
     public void control(int barHeights[], int blockHeights[]) {
-        r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
+        // r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
         if (OPTIMISATION_LEVEL > -1) {
             controlMechanismOptimisedC(barHeights, blockHeights); //Only run this if optimisation is enabled beyond an interpretation of spec.
         } else {
@@ -38,58 +38,29 @@ class RobotControl {
 
     private void controlMechanismC(int barHeights[], int blockHeights[]) {
         //Setting cranes initial position as variables
-        int[] position;
-        position = new int[3];
-        position[0] = 2;         // Initial height of arm 1
-        position[1] = 1;         // Initial width of arm 2
-        position[2] = 0;         // Initial drop of arm 3
+        int[] position = {2, 1, 0}; //height = 2, width = 1, drop = 0
         int numberOfBlocks = blockHeights.length; //How many blocks need to be moved.
         int maxHeight = 0; //Maximum height of bars or stack.
         int stackHeight = 0; //Height of stacked blocks.
-        int maxBlockSize = 0; //Maximum size of blocks. Used to determine if code is necessary
-        int firstOne = 100; //Position of first one high block
-        int firstTwo = 100; //Position of first two high block
-        int firstThree = 100; //Position of first three high block in stack
-        int numberOfThreeBlocks = 0; //Number of blocks to be placed on bars
-        int maxStackedHeight = 0; //Expected maximum height
         int topBlockNumber = blockHeights.length - 1; //Array index of the current top block
         int barOneHeight = 0; //Height of the first bar - where the one high blocks are placed
         int barTwoHeight = 0; //Height of the second bar - where the two high blocks are placed
         int barThreesPosition = 0; //This is used to keep track of what bar we are working on - refers to array index of barOptimised
+        int maxBlockSize = 0;
         // Count the number of blocks that need to be put on bars
         for (int blockRuns = blockHeights.length; blockRuns > 0; blockRuns--) {//A loop that runs code for analysing the blocks. Run the loop for as many times as there are blocks.
             stackHeight += blockHeights[blockRuns - 1];// Add the current block onto the running total
-            if (blockHeights[blockRuns - 1] == 2 && firstTwo == 100) { //If current block is equal to 2 and firstTwo has not been changed since declaration, the current block must be the fist one that is two high.
-                firstTwo = blockRuns - 1;
-            }
-            if (blockHeights[blockRuns - 1] == 1 && firstOne == 100) {//Same as above, but for blocks one high.
-                firstOne = blockRuns - 1;
-            }
             if (maxBlockSize < blockHeights[blockRuns - 1]) { //If current block is larger than all previous blocks, set the largest block to the current one.
                 maxBlockSize = blockHeights[blockRuns - 1];
             }
-            if (blockHeights[blockRuns - 1] == 3 && firstThree == 100) {//Same as above, but for blocks one high.
-                firstThree = blockRuns - 1;
-            }
-            if (blockHeights[blockRuns - 1] == 3) { //If the current block been examined is 3 high, increment the counter.
-                numberOfThreeBlocks++;
-            }
         }// End blocks loop
 
-        //Start Bars loop
-        for (int barRuns = 6; barRuns != 0; barRuns--) {
-            if (maxHeight < barHeights[barRuns - 1]) { //Is the bar been examined larger than all bars previously?
-                maxHeight = barHeights[barRuns - 1];// If it is, it is now that largest bar.
-            }//End if
-        }//End for
-
-        if (maxHeight < maxStackedHeight) { //Finding maximum expected height.
-            maxHeight = maxStackedHeight;
-        }//End if
+        maxHeight = checkMaxPathingHeightToBars(barHeights, 0, 0, 0) + maxBlockSize;
 
         if (maxHeight >= stackHeight + 1) { //Move to the highest expected point.
             position[0] = moveVerticalTo(maxHeight + 1, position[0]);
         } else position[0] = moveVerticalTo(stackHeight + 1, position[0]);
+
         /* ****************MOVEMENT LOOP ******************* */
         while (numberOfBlocks != 0) {
             int currentBlock = blockHeights[topBlockNumber];
@@ -447,7 +418,7 @@ class RobotControl {
         if (firstThree > firstOne || firstThree > firstTwo) {
             threesBefore = true;
         }
-//Only run this if higher level optimisation is enabled.
+        //Only run this if higher level optimisation is enabled.
         if (OPTIMISATION_LEVEL >= 1 && threesBefore) {
             //Rerun the optimisation values on our bars again.
             for (int barRun = blockHeights.length; barRun >= 0; barRun--) {    //Iterate over this 3 times to get a rough approximation of bar ordering and any affect modified optimisation values from adding max height on will bring.
