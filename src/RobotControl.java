@@ -21,14 +21,14 @@ class RobotControl {
     ************LEVEL 1******************************
     * Imperfect, but nonetheless effective optimisation is run. It will not pick up all potential optimisations, but ones with large numbers of moves to be saved should be found.
     * E.g 122347 1111111113 vs 122347 311111111
-    * In situation 1, the 3 is the first block as all the one high bars pass over it, it should be places on the 4 high bar.
+    * In situation 1, the 3 is the first block as all the one high bars pass over it, it should be placed on the 4 high bar.
     * In the second situation, it is the last block. As none of the blocks will pass over it, it should be placed in the 7 high bar.
     */
     private final int OPTIMISATION_LEVEL = -1;
-    private final int SUPER_SPEED = 1; //Set the speed up value - values larger the 20 may cause random errors.
+    private final int SUPER_SPEED = 10; //Set the speed up value - values larger the 20 may cause random errors.
 
     public void control(int barHeights[], int blockHeights[]) {
-        // r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
+        r.speedUp(SUPER_SPEED);//For testing large numbers of iterations.
         if (OPTIMISATION_LEVEL > -1) {
             controlMechanismOptimisedC(barHeights, blockHeights); //Only run this if optimisation is enabled beyond an interpretation of spec.
         } else {
@@ -55,11 +55,11 @@ class RobotControl {
             }
         }// End blocks loop
 
-        maxHeight = checkMaxPathingHeightToBars(barHeights, 0, 0, 0) + maxBlockSize;
+        maxHeight = checkMaxPathingHeightToBars(barHeights, 0, 0, 0);
 
-        if (maxHeight >= stackHeight + 1) { //Move to the highest expected point.
-            position[0] = moveVerticalTo(maxHeight + 1, position[0]);
-        } else position[0] = moveVerticalTo(stackHeight + 1, position[0]);
+        if (maxHeight >= stackHeight) { //Move to the highest expected point.
+            position = moveVerticalPositionTo(maxHeight, position);
+        } else position = moveVerticalPositionTo(stackHeight, position);
 
         /* ****************MOVEMENT LOOP ******************* */
         while (numberOfBlocks != 0) {
@@ -70,7 +70,7 @@ class RobotControl {
             position[1] = moveHorizontalTo(10, position[1]);
 
             //Drop to the top position of the stack
-            position = moveCraneToPosition(stackHeight, position);
+            position = moveVerticalPositionTo(stackHeight, position);
             r.pick();
 
             //We have removed a block, recalculate stack height
@@ -107,13 +107,13 @@ class RobotControl {
             int minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
 
             //Move to our vertical position to prepare for horizontal movement.
-            position = moveCraneToPosition(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
+            position = moveVerticalPositionTo(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
 
             //Move horizontally to our target
             position[1] = moveHorizontalTo(MoveTo, position[1]);
 
             //Drop to the top of the chosen bar
-            position = moveCraneToPosition(currentBarHeight + currentBlock, position);
+            position = moveVerticalPositionTo(currentBarHeight + currentBlock, position);
             r.drop();
 
             //Set the bar position to move the stack to based on the current block
@@ -123,37 +123,47 @@ class RobotControl {
                     barThreesPosition++;
                     break;
                 case 2:
-                    barTwoHeight += 2;
+                    barTwoHeight += 2; //Set second bar height
                     break;
                 case 1:
-                    barOneHeight++;//Set the stack height
+                    barOneHeight++;//Set leftmost bar height
                     break;
                 default:
             }
+
             numberOfBlocks--;
-            if (numberOfBlocks > 0) { //If we still have blocks to move move back to the stack.
+
+            //If we still have blocks to move move back to the stack.
+            if (numberOfBlocks > 0) {
                 minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
-                if (stackHeight > minMoveHeight) { //If the stack height is larger than our calculated minimum, vertical move to stack height
-                    position = moveCraneToPosition(stackHeight, position); //Move to the top of the stack
-                } else //Otherwise, as minMoveHeight is larger, move to that vertical position.
-                    position = moveCraneToPosition(minMoveHeight, position); //Move to the min move height.
-            }//End if
-        }//End while
+
+                //If the stack height is larger than our calculated minimum, vertical move to stack height
+                if (stackHeight > minMoveHeight) {
+                    position = moveVerticalPositionTo(stackHeight, position);
+                }
+                //Otherwise, as minMoveHeight is larger, move to that vertical position.
+                else
+                    position = moveVerticalPositionTo(minMoveHeight, position);
+            }
+        }
     }
 
     private int checkMaxPathingHeightToBars(int barHeights[], int leftBar, int barOneHeight, int barTwoHeight) { //Find the maximum height between two points.
         int maximumHeight = 0;
         while (5 >= leftBar - 3) { //Convert a coordinate system to a bar number system -  move from 1-8 to 0-5, then run through all bars. leftBar has already been set, so use a while loop
+
             //If our bar is not one of the first two check the bar heights array. If the current bar is higher than previous maximum, set its height as current maximum.
             if (leftBar >= 3 && barHeights[leftBar - 3] >= maximumHeight) {
                 maximumHeight = barHeights[leftBar - 3];
             }
-            //if the current bar is the first position, check the maximum height against it and set it if greater.
+
+            //If moving to first bar take its height into consideration.
             else if (leftBar == 1 && barOneHeight >= maximumHeight) {
                 maximumHeight = barOneHeight;
+            }
 
-                //Same as first bar, but for the second bar.
-            } else if (leftBar == 2 && barTwoHeight >= maximumHeight) {
+            //If moving to second bar or beyond, take it's height into consideration.
+            else if (leftBar == 2 && barTwoHeight >= maximumHeight) {
 
                 maximumHeight = barTwoHeight;
 
@@ -167,27 +177,6 @@ class RobotControl {
     }
 
     /* Movement methods. */
-
-    private int moveVerticalTo(int moveTo, int position) { //We get the position to move to and the current position passed to us
-        while (position != moveTo) { //when we have not moved to the correct position proceed
-            if (moveTo < 15 && moveTo > 0) { //Sanity checking to prevent moving to outside boundaries
-
-                if (position < moveTo) { //Move up, increment position
-                    r.up();
-                    position++;
-                }
-                if (position > moveTo) { //move down, decrement position
-                    r.down();
-                    position--;
-                }
-            } else if (moveTo > 14) { //If move to is greater than 14, set it to 14
-                moveTo = 14;
-            } else {
-                moveTo = 0; //If it isn't greater than 14, it must be a negative number. Set to 0
-            }
-        }
-        return (position);
-    }
 
     private int moveHorizontalTo(int moveTo, int position) {
         while (position != moveTo) {
@@ -210,7 +199,7 @@ class RobotControl {
         return (position); //Return our position so that it stays up to date
     }
 
-    private int[] moveCraneToPosition(int moveTo, int[] position) {
+    private int[] moveVerticalPositionTo(int moveTo, int[] position) {
         moveTo++;
         int verticalPosition = position[0] - position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
         while (verticalPosition != moveTo) {
@@ -308,9 +297,9 @@ class RobotControl {
             maxHeight = maxStackedHeight;
         }//End if
 
-        if (maxHeight >= stackHeight + 1) { //Move to the highest expected point.
-            position[0] = moveVerticalTo(maxHeight + 1, position[0]);
-        } else position[0] = moveVerticalTo(stackHeight + 1, position[0]);
+        if (maxHeight >= stackHeight) { //Move to the highest expected point.
+            position = moveVerticalPositionTo(maxHeight, position);
+        } else position = moveVerticalPositionTo(stackHeight, position);
         /* ****************MOVEMENT LOOP ******************* */
         while (numberOfBlocks != 0) {
             int currentBlock = blockHeights[topBlockNumber];
@@ -318,7 +307,7 @@ class RobotControl {
             //Move to the stack
             position[1] = moveHorizontalTo(10, position[1]);
             //Drop to the top position of the stack
-            position = moveCraneToPosition(stackHeight, position);
+            position = moveVerticalPositionTo(stackHeight, position);
             r.pick();
             //We have removed a block, recalculate stack height
             stackHeight -= currentBlock;
@@ -350,11 +339,11 @@ class RobotControl {
             //Calculating the minimum height we can move to get to the chosen position
             int minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
             //Move to our vertical position to prepare for horizontal movement.
-            position = moveCraneToPosition(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
+            position = moveVerticalPositionTo(minMoveHeight + currentBlock /* To take bar height + crane height into account */, position);
             //Move horizontally to our target
             position[1] = moveHorizontalTo(MoveTo, position[1]);
             //Drop to the top of the chosen bar
-            position = moveCraneToPosition(currentBarHeight + currentBlock, position);
+            position = moveVerticalPositionTo(currentBarHeight + currentBlock, position);
             r.drop();
             //Set the bar position to move the stack to based on the current block
             switch (currentBlock) {
@@ -374,9 +363,9 @@ class RobotControl {
             if (numberOfBlocks > 0) { //If we still have blocks to move move back to the stack.
                 minMoveHeight = checkMaxPathingHeightToBars(barHeights, MoveTo, barOneHeight, barTwoHeight);
                 if (stackHeight > minMoveHeight) { //If the stack height is larger than our calculated minimum, vertical move to stack height
-                    position = moveCraneToPosition(stackHeight, position); //Move to the top of the stack
+                    position = moveVerticalPositionTo(stackHeight, position); //Move to the top of the stack
                 } else //Otherwise, as minMoveHeight is larger, move to that vertical position.
-                    position = moveCraneToPosition(minMoveHeight, position); //Move to the min move height.
+                    position = moveVerticalPositionTo(minMoveHeight, position); //Move to the min move height.
             }//End if
         }//End while
     }
