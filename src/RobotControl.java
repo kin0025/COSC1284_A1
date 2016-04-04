@@ -40,24 +40,32 @@ class RobotControl {
         //Setting cranes initial position as variables
         int[] position = {2, 1, 0}; //height = 2, width = 1, drop = 0
         int numberOfBlocks = blockHeights.length; //How many blocks need to be moved.
-        int maxHeight = 0; //Maximum height of bars or stack.
+        int maxHeight; //Maximum height of bars or stack.
         int stackHeight = 0; //Height of stacked blocks.
         int topBlockNumber = blockHeights.length - 1; //Array index of the current top block
         int barOneHeight = 0; //Height of the first bar - where the one high blocks are placed
         int barTwoHeight = 0; //Height of the second bar - where the two high blocks are placed
-        int barThreesPosition = 0; //This is used to keep track of what bar we are working on - refers to array index of barOptimised
         int maxBlockSize = 0;
-        // Count the number of blocks that need to be put on bars
-        for (int blockRuns = blockHeights.length; blockRuns > 0; blockRuns--) {//A loop that runs code for analysing the blocks. Run the loop for as many times as there are blocks.
-            stackHeight += blockHeights[blockRuns - 1];// Add the current block onto the running total
-            if (maxBlockSize < blockHeights[blockRuns - 1]) { //If current block is larger than all previous blocks, set the largest block to the current one.
+        int barThreesPosition = 0; //This is used to keep track of what bar we are working on.
+
+
+        //A loop that runs code for analysing the blocks.
+        for (int blockRuns = blockHeights.length; blockRuns > 0; blockRuns--) {
+
+            //Calculate the total stack size by adding current block onto running total.
+            stackHeight += blockHeights[blockRuns - 1];
+
+            //If current block is larger than all previous blocks, set the largest block to the current one.
+            if (maxBlockSize < blockHeights[blockRuns - 1]) {
                 maxBlockSize = blockHeights[blockRuns - 1];
             }
-        }// End blocks loop
+        }
 
+        //Find the maximum height of the bars.
         maxHeight = checkMaxPathingHeightToBars(barHeights, 0, 0, 0);
 
-        if (maxHeight >= stackHeight) { //Move to the highest expected point.
+        //Move to the highest expected point. If bars are higher than stack, move to height of bars. Else move to stack.
+        if (maxHeight >= stackHeight) {
             position = moveVerticalPositionTo(maxHeight, position);
         } else position = moveVerticalPositionTo(stackHeight, position);
 
@@ -178,53 +186,75 @@ class RobotControl {
 
     /* Movement methods. */
 
-    private int moveHorizontalTo(int moveTo, int position) {
-        while (position != moveTo) {
-            if (moveTo < 11 && moveTo > 0) { //More input sanitizing
+    private int moveHorizontalTo(int moveTo, int horizontalPosition) {
+        //If not yet at destination, run the block
+        while (horizontalPosition != moveTo) {
 
-                if (position < moveTo) { //Extend to move to move to
+            //Check if we have correct input
+            if (moveTo < 11 && moveTo > 0) {
+
+                //Extend the arm if out horizontalPosition is less than our target.
+                if (horizontalPosition < moveTo) {
                     r.extend();
-                    position++;
+                    horizontalPosition++;
                 }
-                if (position > moveTo) {
+                //Retract the arm if our horizontalPosition is greater than target.
+                else if (horizontalPosition > moveTo) {
                     r.contract();
-                    position--;
+                    horizontalPosition--;
                 }
-            } else if (moveTo > 10) { //if greater than 10, set to 10
+            }
+            //Our input will move the bar too far. If we are trying to move to a position greater than maximum extension, set moveTo to maximum extension.
+            else if (moveTo > 10) {
                 moveTo = 10;
-            } else {
-                moveTo = 1; //if less than 1 (the minimum horizontal width), set to 1
+            }
+            //if we want ot move to less than 1 (the minimum horizontal width), set to 1
+            else {
+                moveTo = 1;
             }
         }
-        return (position); //Return our position so that it stays up to date
+        return (horizontalPosition); //Return our horizontalPosition so that it stays up to date
     }
 
     private int[] moveVerticalPositionTo(int moveTo, int[] position) {
+        //To account for the thickness of the crane horizontal arm.
         moveTo++;
-        int verticalPosition = position[0] - position[2]; //Slightly more complex than before. - We get the position of the crane end using the height of the tower and subtracting the drop
+
+        //Get the position of the crane end using the height of the tower and subtracting the drop
+        int verticalPosition = position[0] - position[2];
+
         while (verticalPosition != moveTo) {
             verticalPosition = position[0] - position[2];
-            if (moveTo > position[0]) {//If we are trying to move too high, increment the height.
+            //If we are trying to move higher than the horizontal bar's height(ending up with a negative value for the drop), increment the height.
+            if (moveTo > position[0]) {
                 r.up();
                 position[0]++;
-            } else if (moveTo < 15 && moveTo > -1) { //Is the function less than -technically couild have used >= or <=, but this works. Again making sure we don't move outside acceptable bounds.
-
+            }
+            //Don't try to move outside bounds of application.
+            else if (moveTo <= 14 && moveTo >= 0) {
+                //If we are lower than the move to height, raise the drop arm.
                 if (verticalPosition < moveTo) {
                     r.raise();
-                    position[2]--; //Still change the drop value, not the position one, as it is updated every run, and we need to pass the drop value back at the end.
+                    position[2]--;
                 }
-                if (verticalPosition > moveTo) {
+                //Otherwise if the position we want to move to is lower than the current height, lower the drop arm.
+                else if (verticalPosition > moveTo) {
                     r.lower();
                     position[2]++;
                 }
+                //If neither of those statements caught anything, we must already be at our destination. Do nothing.
 
-            } else if (moveTo > 14) { //If trying to move too high set to acceptable height
+            }
+            //If trying to move too high set to acceptable height
+            else if (moveTo > 14) {
                 moveTo = 14;
-            } else {
+            }
+            //If the previous if failed, we must be trying to move too low. Move to 0.
+            else {
                 moveTo = 0;
             }
         }
-        return (position);//Return drop. height may change whilst function runs. - See checks during movement loop.
+        return (position);
     }
 
     /*
