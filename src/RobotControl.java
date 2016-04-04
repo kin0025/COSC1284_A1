@@ -308,7 +308,6 @@ class RobotControl {
             }//End if
         }//End for
 
-        //Initialise a variable
         int[] barOptimised;
         barOptimised = new int[numberOfThreeBlocks + 1];
         if (maxBlockSize == 3) {//We only need to optimise for Bars if there are blocks to be placed on them.
